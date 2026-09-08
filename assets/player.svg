@@ -1,0 +1,43 @@
+<svg width="140" height="169" viewBox="250 215 140 169" role="img" xmlns="http://www.w3.org/2000/svg">
+<title>Blue Bird</title>
+<desc>A round blue bird with an orange beak and feet on a transparent background.</desc>
+
+<style>
+  .body { fill: #4A90D9; }
+  .belly { fill: #E8F4FF; }
+  .wing { fill: #2E6EAF; }
+  .beak { fill: #F5A623; }
+  .feet { fill: #E8891A; stroke: #C96B00; stroke-width: 1.5; stroke-linecap: round; }
+  .tail { fill: #2E6EAF; }
+  .head-top { fill: #3A7BC8; }
+</style>
+
+<g transform="translate(310, 270)">
+  <path d="M -10,60 Q -35,80 -50,100 Q -30,95 -10,85 Q 5,75 10,60 Z" class="tail"/>
+  <ellipse cx="0" cy="30" rx="60" ry="55" class="body"/>
+  <path d="M 30,10 Q 70,-10 80,30 Q 70,50 30,50 Z" class="wing"/>
+  <path d="M 32,15 Q 68,-5 76,28 Q 66,44 32,44 Z" fill="#5BA0E8" opacity="0.5"/>
+  <ellipse cx="0" cy="45" rx="35" ry="28" class="belly"/>
+  <ellipse cx="0" cy="-20" rx="38" ry="36" class="head-top"/>
+  <path d="M -5,-38 Q 0,-55 5,-38 Q 3,-32 -3,-32 Z" fill="#3A7BC8"/>
+  <path d="M -3,-36 Q 0,-50 3,-36 Q 1,-31 -1,-31 Z" fill="#5BA0E8"/>
+  <ellipse cx="-12" cy="-25" rx="10" ry="10" fill="#FFFFFF"/>
+  <ellipse cx="-11" cy="-25" rx="7" ry="7" fill="#1A1A2E"/>
+  <ellipse cx="-9" cy="-27" rx="2.5" ry="2.5" fill="#FFFFFF"/>
+  <polygon points="15,-20 35,-16 15,-12" class="beak"/>
+  <line x1="15" y1="-16" x2="33" y2="-16" stroke="#C96B00" stroke-width="1"/>
+  <g class="feet">
+    <line x1="-15" y1="82" x2="-15" y2="105"/>
+    <line x1="-15" y1="105" x2="-30" y2="112"/>
+    <line x1="-15" y1="105" x2="-10" y2="113"/>
+    <line x1="-15" y1="105" x2="0" y2="110"/>
+    <line x1="-15" y1="105" x2="-24" y2="98"/>
+    <line x1="15" y1="82" x2="15" y2="105"/>
+    <line x1="15" y1="105" x2="0" y2="112"/>
+    <line x1="15" y1="105" x2="20" y2="113"/>
+    <line x1="15" y1="105" x2="30" y2="110"/>
+    <line x1="15" y1="105" x2="6" y2="98"/>
+  </g>
+</g>
+
+</svg>

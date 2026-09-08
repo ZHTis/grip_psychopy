@@ -1,0 +1,23 @@
+{
+  "participant": "test",
+  "session": "001",
+  "output": "data",
+  "display": {"size": [1200, 500], "fullscreen": false, "screen": 0},
+  "grip": {"port": "COM6", "baud": 115200, "gain": 1.0, "stale_timeout_s": 1.0},
+  "markers": {
+    "port": "COM10", "baud": 115200, "pulse_ms": 10, "loopback_pin": null, "a0_threshold": 512,
+    "codes": {"run_start": 1, "trial_start": 2, "feedback_start": 3,
+              "success": 4, "collision": 5, "trial_end": 6, "run_end": 7, "abort": 255}
+  },
+  "assets": {"player": "assets/player.svg", "background": "assets/background.svg"},
+  "map": "maps/random.csv",
+  "task": {
+    "sample_block_size": 32, "sampling_rate": 256,
+    "number_of_trials": 10,
+    "durations": {"pre_run": 1.0, "prepare": 1.0, "feedback": 45.0, "result": 1.0, "iti": 1.0},
+    "grip_min": 0.81, "grip_max": 1.20, "smoothing": 1.0,
+    "forward_speed": 30.0, "lift_gain": 150.0, "gravity": 15.0, "damping": 0.98,
+    "player_start": [20.0, 50.0], "player_size": [20.0, 20.0], "world_height": 90.0
+  },
+  "verbose": true
+}

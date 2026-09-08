@@ -1,0 +1,6 @@
+# Install these in the same Python environment used by PsychoPy Coder.
+pyserial>=3.5,<4
+PyQt6>=6.5,<7
+Pillow>=9
+# PsychoPy itself: use an existing PsychoPy Standalone installation, or install
+# a compatible psychopy release in a separate experiment environment.

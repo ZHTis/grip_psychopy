@@ -1,0 +1,22 @@
+{
+  "assets\\background.svg": {
+    "source": "C:\\Users\\heting\\Documents\\bci2000\\src\\core\\Application\\GripFlightTask\\assets\\background.svg",
+    "sha256": "814041b57bcde7ee34dd01b7b9d51d25c9a11e8b6c04bf651af4c34d3efb2dc0"
+  },
+  "assets\\player.svg": {
+    "source": "C:\\Users\\heting\\Documents\\bci2000\\src\\core\\Application\\GripFlightTask\\assets\\player.svg",
+    "sha256": "8b4638e7fcc83d41121bed4f46a06339692ddc28557ab60cc3cbd3d2ab3eacce"
+  },
+  "assets\\README.md": {
+    "source": "C:\\Users\\heting\\Documents\\bci2000\\src\\core\\Application\\GripFlightTask\\assets\\README.md",
+    "sha256": "f66899908d8b73588fef369e944779458fe5865883d74127079ac83ba06e68d6"
+  },
+  "maps\\default.csv": {
+    "source": "C:\\Users\\heting\\Documents\\bci2000\\src\\core\\Application\\GripFlightTask\\maps\\default.csv",
+    "sha256": "42fa0253f3ddb5be15de2be3576763794d76440f927e6a0db10e1bdf2b190d55"
+  },
+  "maps\\random.csv": {
+    "source": "C:\\Users\\heting\\Documents\\bci2000\\src\\core\\Application\\GripFlightTask\\maps\\random.csv",
+    "sha256": "351d4337c2e52dfd2ec653e6d4aad5ac3fd7a546caf28c5a2fac450aa1253894"
+  }
+}

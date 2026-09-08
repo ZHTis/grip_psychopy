@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "utc_start": "2026-09-08T05:47:39.123857+00:00",
+  "clock": "time.perf_counter seconds relative to session origin",
+  "parameters": {
+    "module": "markers",
+    "port": "COM7",
+    "baud": 115200,
+    "seconds": 10,
+    "codes": "1,2,4,8,16,32,64,128,255,1,1",
+    "pulse_ms": 10,
+    "simulate": false,
+    "directory": null
+  },
+  "status": "error",
+  "duration_s": 0.022020500036887825
+}

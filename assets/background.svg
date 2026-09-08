@@ -1,0 +1,34 @@
+<svg width="680" height="520" viewBox="0 0 680 520" role="img" xmlns="http://www.w3.org/2000/svg">
+<title>背景：树枝与叶子</title>
+<desc>蓝色天空背景，棕色树枝，绿色叶子，装饰光点</desc>
+
+<rect width="680" height="520" fill="#F0F8FF"/>
+
+<ellipse cx="180" cy="420" rx="60" ry="12" fill="#C8E6FA" opacity="0.3"/>
+<ellipse cx="500" cy="420" rx="80" ry="10" fill="#C8E6FA" opacity="0.25"/>
+
+<g>
+  <ellipse cx="120" cy="460" rx="18" ry="8" fill="#5A9E5A"/>
+  <ellipse cx="95" cy="450" rx="14" ry="7" fill="#5A9E5A" transform="rotate(-20,95,450)"/>
+  <ellipse cx="145" cy="455" rx="12" ry="6" fill="#5A9E5A" transform="rotate(15,145,455)"/>
+</g>
+
+<rect x="60" y="380" width="480" height="22" rx="8" fill="#8B6347"/>
+
+<g>
+  <ellipse cx="560" cy="370" rx="22" ry="9" fill="#5A9E5A" transform="rotate(-10,560,370)"/>
+  <ellipse cx="580" cy="358" rx="16" ry="8" fill="#5A9E5A" transform="rotate(10,580,358)"/>
+  <ellipse cx="543" cy="358" rx="14" ry="7" fill="#5A9E5A" transform="rotate(-25,543,358)"/>
+  <ellipse cx="565" cy="350" rx="12" ry="6" fill="#5A9E5A"/>
+</g>
+
+<g opacity="0.5">
+  <ellipse cx="160" cy="200" rx="6" ry="6" fill="#FFE066"/>
+  <ellipse cx="480" cy="160" rx="8" ry="8" fill="#FFE066"/>
+  <ellipse cx="550" cy="240" rx="4" ry="4" fill="#FFE066"/>
+  <ellipse cx="130" cy="300" rx="5" ry="5" fill="#FFE066"/>
+</g>
+<path d="M 180,190 Q 185,180 190,190 Q 185,195 180,190 Z" fill="#FFE066" opacity="0.6"/>
+<path d="M 490,150 Q 496,138 502,150 Q 496,156 490,150 Z" fill="#FFE066" opacity="0.6"/>
+
+</svg>

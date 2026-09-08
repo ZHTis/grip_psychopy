@@ -1,0 +1,7 @@
+pandas
+numpy
+matplotlib>=3.7
+nbformat
+nbclient
+ipykernel
+# Optional browser UI: notebook or jupyterlab
