@@ -4,6 +4,33 @@
 
 ## Python 环境
 
+### Mac 启动与跨平台串口
+
+串口名称直接交给 pyserial：Windows 使用 `COM6` 等名称，Mac 使用 `/dev/cu.usbmodem…` 或 `/dev/cu.usbserial…`。无需修改 Python 源码。
+
+Mac 在项目目录中执行：
+
+```bash
+bash run_python.sh run_task.py --list-ports
+bash launch_simulation.command
+# 默认已配置：握力 /dev/cu.usbmodem1301，打标 /dev/cu.usbmodem1401
+bash launch_hardware.command
+# 更换接口后，可以覆盖默认端口：
+bash launch_hardware.command --grip-port /dev/cu.usbmodem1301 --marker-port /dev/cu.usbmodem1401
+```
+
+Windows 在项目目录的 PowerShell 中执行：
+
+```powershell
+.\run_python.bat run_task.py --list-ports
+.\launch_simulation.bat
+.\launch_hardware.bat --grip-port COM6 --marker-port COM10
+```
+
+命令行端口优先于 `config.json` 中的 `grip.port` / `markers.port`，只影响本次运行，不改写文件；实际使用的值会保存到会话 metadata。不传端口参数时仍使用配置文件。也可以为每台电脑准备配置文件，通过 `--config` 指定。两块板应使用不同端口，逐块插入并列出端口可以确认对应关系；程序不会自动猜测板子的用途。`--list-ports` 只列设备，不启动实验或创建数据会话。
+
+Mac 的 `run_python.sh` 依次选择 `GRIP_PYTHON`、项目 `.venv/bin/python`、`/Applications/PsychoPy.app` 内置 Python、PATH 中的 `python3`。使用内置 Python 时自动为子进程设置 `PYTHONHOME`。两个 `.command` 文件也可双击启动。`launch_hardware.command` 默认传入已确认的 Mac 端口：握力板（原 COM6）为 `/dev/cu.usbmodem1301`，打标板（原 COM10）为 `/dev/cu.usbmodem1401`；用户追加的端口参数可覆盖这些默认值，包括使用 `--config` 时。Windows 启动脚本仍使用配置文件中的 COM6 / COM10。
+
 Python 解释器必须来自目标电脑上实际可用的环境；不能把开发电脑的虚拟环境目录直接复制过去当作已安装环境。
 
 所有启动 bat 通过 `run_python.bat` 选择解释器，优先级为：
@@ -13,6 +40,10 @@ Python 解释器必须来自目标电脑上实际可用的环境；不能把开�
 3. 当前 PATH / 已激活环境中的 `python`。
 
 使用已安装 PsychoPy 的环境时，激活该环境后执行 `python run_task.py`，或在 PsychoPy Coder 中打开 run_task.py。双击 bat 时，需保证上述选择能找到具有 PsychoPy 依赖的解释器。数据查看笔记本可使用另一个装有 pandas、numpy、matplotlib、ipykernel 的环境。
+
+## 显示器
+
+默认 `config.json` 设置 `display.fullscreen=true`、`display.screen=1`，在第二块显示器全屏运行（PsychoPy 从 0 开始编号）。请将外接屏设为扩展显示；如果外接屏被系统排列为第 0 块屏幕，则将 `screen` 改为 `0`。按 Esc 退出实验。硬件模式和模拟模式共用此设置。
 
 ## 路径规则
 

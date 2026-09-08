@@ -15,15 +15,31 @@ from gripflight.paths import PROJECT_ROOT, project_path
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--config', default='config.json', help='Path relative to project root')
+    parser.add_argument('--grip-port', help='Override grip port, e.g. COM6 or /dev/cu.usbmodem1301')
+    parser.add_argument('--marker-port', help='Override marker port, e.g. COM10 or /dev/cu.usbmodem1401')
+    parser.add_argument('--list-ports', action='store_true', help='List serial ports and exit without starting a session')
     parser.add_argument('--simulate', action='store_true', help='No hardware; mouse left/space gives full grip')
     parser.add_argument('--headless', action='store_true', help='Fast logic smoke test, requires --simulate')
     parser.add_argument('--marker-mode', choices=['loopback', 'output_only'], help='Override markers.mode for this run')
     args = parser.parse_args()
+    if args.list_ports:
+        from serial.tools import list_ports
+        ports = sorted(list_ports.comports(), key=lambda port: port.device)
+        for port in ports:
+            print(f'{port.device}\n  {port.description}\n  {port.hwid}')
+        if not ports:
+            print('No serial ports found.')
+        return
     if args.headless and not args.simulate:
         parser.error('--headless requires --simulate')
     config_path = project_path(args.config)
     root = PROJECT_ROOT
     config = json.loads(config_path.read_text(encoding='utf-8-sig'))
+    for section, override in (('grip', args.grip_port), ('markers', args.marker_port)):
+        if override is not None:
+            if not override.strip():
+                parser.error(f'{section} port must not be empty')
+            config[section]['port'] = override.strip()
     if args.marker_mode is not None:
         config['markers']['mode'] = args.marker_mode
     validate_config(config)

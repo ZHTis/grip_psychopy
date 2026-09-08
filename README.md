@@ -5,6 +5,8 @@
 
 ## 快速开始
 
+Mac 使用 `bash launch_simulation.command` 模拟运行。串口可通过 `--grip-port` / `--marker-port` 为本次运行指定，使用 `--list-ports` 查询本机端口；Mac 与 Windows 完整命令见 [PORTABILITY.md](PORTABILITY.md#mac-启动与跨平台串口)。
+
 先在目标电脑选择安装了 PsychoPy 的 Python 环境。启动脚本不再依赖固定安装路径，解释器选择及迁移步骤见 [PORTABILITY.md](PORTABILITY.md)。
 
 1. 双击 `launch_simulation.bat`，无需 Arduino，按住鼠标左键增加握力，松开降低握力，Esc 中止。模拟数据明确标记为 simulated。

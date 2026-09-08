@@ -1,6 +1,6 @@
 # 握力与打标数据查看
 
-打开 `grip_markers.ipynb`，选择 Python 内核，按顺序运行。参数集中在“选择数据”单元格：session 名称、trial、起止时间。默认选择最近一次非模拟且已导出 CSV 的 session。
+打开 `grip_markers.ipynb`，选择 Python 内核，按顺序运行。参数集中在“选择数据”单元格：session 名称、trial、起止时间。`SESSION_NAME=None` 默认按会话目录时间选择最新一次已导出 CSV 的记录，包括模拟记录。完成新实验后重新运行所有单元格即可刷新。
 
 使用目标电脑上安装了 pandas、numpy、matplotlib、ipykernel 的 Python 内核。可在 VS Code 中选择该内核；需要网页界面时，在选用的分析环境安装 notebook，然后运行 `python -m notebook grip_markers.ipynb`。实验运行和数据查看可以选择不同的环境，均不需要在代码中写死解释器路径。见上级目录 PORTABILITY.md。
 

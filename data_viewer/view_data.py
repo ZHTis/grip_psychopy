@@ -70,9 +70,7 @@ def load_session(data_root, name=None):
     root = data_path(data_root)
     if name is None:
         sessions = list_sessions(root)
-        candidates = sessions[sessions.csv_available & ~sessions.simulated.astype(bool)]
-        if candidates.empty:
-            candidates = sessions[sessions.csv_available]
+        candidates = sessions[sessions.csv_available]
         if candidates.empty:
             raise FileNotFoundError(f'No exported session in {root}')
         name = candidates.iloc[0]['session']

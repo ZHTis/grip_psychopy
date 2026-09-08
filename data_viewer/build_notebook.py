@@ -52,7 +52,7 @@ plot_session = viewer.plot_session
 print('Loaded script:', viewer.__file__)
 print('Python:', sys.executable)
 print('Viewer:', VIEWER_DIR.resolve())'''),
-md('### 2. 选择数据\n`SESSION_NAME=None` 默认选择最近一次**非模拟**且已导出 CSV 的 session；没有非模拟记录才选择模拟记录。可以从下面表格复制完整 session 名称。'),
+md('### 2. 选择数据\n`SESSION_NAME=None` 默认按会话目录时间选择最新一次已导出 CSV 的记录，包括模拟记录。每次重新运行读取单元格都会重新选择最新记录。可以从下面表格复制完整 session 名称来指定历史记录。'),
 code('''DATA_ROOT = 'data'   # 相对于项目根目录；独立测试数据可改成 'test_data'
 SESSION_NAME = None  # 例如 '20260908_163647_ddebedaf'
 TRIAL = None         # None=全部；例如 1=第一个 trial
