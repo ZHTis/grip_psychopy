@@ -120,3 +120,16 @@ Esc 为 aborted；串口失败、无新握力、打标回执异常或严重调�
 - [Arduino UNO R3 官方规格](https://docs.arduino.cc/hardware/uno-rev3/)
 
 `verification/REPORT.md` 记录本次实际做过的检查及尚未完成的实机验证。
+
+
+### 日常打标与回读排查
+
+任务配置 `markers.mode` 和独立打标测试默认使用 `output_only`：直接输出给外部设备，不需要回接线，不检测接线，也不发送启动探测码。串口 ACK/DONE 只是固件确认，不能证明外部设备已收到电平。
+
+外部设备收不到标时，按 `arduino/marker_board/PinMap.h` 的输出/输入顺序接好八路回接线，手动运行回读测试：
+
+```powershell
+python test_module.py markers --port COM10 --mode loopback
+```
+
+测试终端会打印 TX/RX 及逐位回读比对，结果保存在测试会话的 `events.csv`。任务中需要回读时使用 `python run_task.py --marker-mode loopback`；正常任务直接运行 `python run_task.py`。请使用已安装 PsychoPy 的 Python 环境，并关闭其他占用该串口的软件。固件需支持本项目的 M（回读）和 O（仅输出）命令。

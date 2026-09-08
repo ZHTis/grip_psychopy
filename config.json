@@ -5,8 +5,8 @@
   "display": {"size": [1200, 500], "fullscreen": false, "screen": 0},
   "grip": {"port": "COM6", "baud": 115200, "gain": 1.0, "stale_timeout_s": 1.0},
   "markers": {
-    "mode": "loopback",
-    "port": "COM10", "baud": 115200, "verbose": true, "pulse_ms": 10, "loopback_pin": null, "a0_threshold": 512,
+    "mode": "output_only",
+    "port": "COM10", "baud": 115200, "verbose": true, "pulse_ms": 10, "loopback_pin": null,
     "codes": {"run_start": 1, "trial_start": 2, "feedback_start": 3,
               "success": 4, "collision": 5, "trial_end": 6, "run_end": 7, "abort": 255}
   },

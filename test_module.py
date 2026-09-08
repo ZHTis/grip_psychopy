@@ -19,7 +19,7 @@ def main():
     p.add_argument('--a0-threshold', type=int, default=512)
     p.add_argument('--simulate', action='store_true')
     p.add_argument('--directory', help='Existing session directory for export')
-    p.add_argument('--mode', choices=['loopback','output_only'], default='loopback')
+    p.add_argument('--mode', choices=['loopback','output_only'], default='output_only')
     args = p.parse_args()
     if args.module == 'export':
         if not args.directory: p.error('--directory is required')
