@@ -16,8 +16,9 @@ from zipfile import ZipFile, ZIP_DEFLATED
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+import numpy as np
 
-from view_data import data_path, load_session, plot_session
+from view_data import data_path, load_session, plot_session, read_table
 
 P = 'http://schemas.openxmlformats.org/presentationml/2006/main'
 A = 'http://schemas.openxmlformats.org/drawingml/2006/main'
@@ -182,13 +183,21 @@ def export_folder(data_root, output, dpi=180):
         missing = [name for name in ('grip.csv', 'events.csv') if not (source.parent/name).is_file()]
         reason = 'session still recording' if metadata.get('status') == 'recording' else (
             'missing ' + ', '.join(missing) if missing else None)
+        if reason is None:
+            grip = read_table(source.parent/'grip.csv')
+            valid = grip[grip.kind.eq('grip')]
+            if 'voltage' not in valid or not (
+                np.isfinite(valid['voltage']) & np.isfinite(valid['t_host_s'])
+                & valid['t_host_s'].ge(0)
+            ).any():
+                reason = 'no valid grip voltage samples'
         if reason:
             skipped.append({'source': str(source.parent), 'reason': reason})
             print(f'SKIP {source.parent}: {reason}')
         else:
             included.append(source.parent)
     if not included:
-        raise ValueError('No exported sessions with both grip.csv and events.csv')
+        raise ValueError('No exported sessions with valid grip voltage samples and events.csv')
     output.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix='.grip-ppt-', dir=output.parent) as temp:
         staging = Path(temp)

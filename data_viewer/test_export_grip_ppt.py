@@ -55,6 +55,23 @@ class ExportTests(unittest.TestCase):
             with self.assertRaises(FileExistsError):
                 export_folder(root/'data', out)
 
+    def test_empty_and_nonfinite_grip_are_skipped(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            self.session(root/'data', '01_valid')
+            for name, voltage in [('02_empty', None), ('03_nan', float('nan')),
+                                  ('04_inf', float('inf'))]:
+                folder = self.session(root/'data', name)
+                rows = [] if voltage is None else [
+                    {'id': 1, 'kind': 'grip', 't_host_s': 1, 'voltage': voltage}]
+                pd.DataFrame(rows, columns=['id','kind','t_host_s','voltage']).to_csv(
+                    folder/'grip.csv', index=False)
+            manifest = export_folder(root/'data', root/'valid.pptx', dpi=72)
+            self.assertEqual(len(manifest['slides']), 1)
+            self.assertEqual(len(manifest['skipped']), 3)
+            self.assertTrue(all(row['reason'] == 'no valid grip voltage samples'
+                                for row in manifest['skipped']))
+
     def test_missing_exports_do_not_make_empty_deck(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)

@@ -1,0 +1,6 @@
+/Users/heting/miniconda3/envs/eeg/bin/python data_viewer/export_grip_ppt.py \
+  --data-root "/Users/heting/Documents/xuanwu-grip/... \
+  --output "data_viewer/exports/握力汇总.pptx"
+
+
+bash launch_hardware.command
