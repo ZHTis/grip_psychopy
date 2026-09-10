@@ -133,7 +133,7 @@ def quality_summary(session):
             ', '.join(k+'.csv' for k in ['grip','events','task','trials','diagnostics'] if not (session['path']/(k+'.csv')).exists())]} )
 
 
-def plot_session(session, trial=None, start=None, end=None):
+def plot_session(session, trial=None, start=None, end=None, raw_only=False):
     """Event marker bars over raw voltage, with task input in a second panel."""
     grip = session['grip'][session['grip'].kind.eq('grip')].copy()
     task = session['task'].copy()
@@ -156,11 +156,17 @@ def plot_session(session, trial=None, start=None, end=None):
     blue, orange, gray = '#27649B', '#C17525', '#777777'
     with plt.rc_context({'font.family': 'DejaVu Sans', 'font.size': 10, 'axes.spines.top': False,
                          'axes.spines.right': False, 'axes.titlelocation': 'left'}):
-        fig, axes = plt.subplots(2,1,figsize=(13,8),sharex=True,gridspec_kw={'height_ratios':[3,1]},layout='constrained')
+        if raw_only:
+            fig, ax = plt.subplots(figsize=(16,9), layout='constrained')
+            axes = [ax]
+        else:
+            fig, axes = plt.subplots(2,1,figsize=(13,8),sharex=True,gridspec_kw={'height_ratios':[3,1]},layout='constrained')
         simulated = session['metadata'].get('parameters',{}).get('runtime',{}).get('simulate',False)
         fig.suptitle(f'Grip and marker timeline | {session["path"].name}\n'
                      f'{"SIMULATED" if simulated else "Hardware session"} | trial={trial if trial is not None else "all"} | '
-                     f'host time {left:.2f}–{right:.2f} s',fontsize=13,ha='left',x=.06)
+                     f'host time {left:.2f}–{right:.2f} s'
+                     + (f' | status={session["metadata"].get("status", "unknown")}' if raw_only else ''),
+                     fontsize=13,ha='left',x=.06)
         for ax in axes:
             ax.grid(axis='y',color='#E8E8E8',linewidth=.6)
             ax.set_xlim(left,right)
@@ -178,14 +184,15 @@ def plot_session(session, trial=None, start=None, end=None):
         else:
             axes[0].text(.5,.5,'No valid grip samples in this selection',transform=axes[0].transAxes,ha='center')
         axes[0].set(title='Raw grip voltage with event marker bars (host request times)',ylabel='Voltage (V)')
-        if len(task) and 'smoothed' in task:
+        if not raw_only and len(task) and 'smoothed' in task:
             axes[1].step(task.t_host_s,task.smoothed,where='post',color=blue,label='Task smoothed input')
             flags = task.get('grip_input_status',pd.Series('',index=task.index)).isin(['missing','stale','reader_error'])
             axes[1].scatter(task.loc[flags,'t_host_s'],task.loc[flags,'smoothed'],color=orange,marker='x',s=20,label='Stale / missing / reader error')
             axes[1].legend(loc='upper right',fontsize=8)
-        else:
+        elif not raw_only:
             axes[1].text(.5,.5,'No task steps in this selection',transform=axes[1].transAxes,ha='center')
-        axes[1].set(title='Input used by the task (held between updates; reset each trial)',ylabel='Normalized (0–1)',ylim=(-.05,1.05))
+        if not raw_only:
+            axes[1].set(title='Input used by the task (held between updates; reset each trial)',ylabel='Normalized (0–1)',ylim=(-.05,1.05))
         # Bars denote request instants, not TTL pulse widths or EEG onset times.
         from matplotlib.lines import Line2D
         finite = grip.get('voltage', pd.Series(dtype=float)).dropna()
@@ -193,6 +200,7 @@ def plot_session(session, trial=None, start=None, end=None):
             low, high = float(finite.min()), float(finite.max())
             span = max(high-low, .01)
             axes[0].set_ylim(low-.08*span, high+.85*span)
+        label_lanes = [-float('inf')] * 5
         for index, (_, row) in enumerate(shown.iterrows()):
             failed = row.status in ('error','no_ack') or row.readback_during_ok == False or row.readback_after_ok == False
             color = orange if failed else gray
@@ -206,14 +214,22 @@ def plot_session(session, trial=None, start=None, end=None):
             elif row.simulated:
                 label += ' (sim)'
             near_right = row.request_s > left+.9*(right-left)
-            axes[0].annotate(label,xy=(row.request_s,.98),xycoords=('data','axes fraction'),
+            label_y = .98
+            if raw_only:
+                # Separate labels for requests emitted close together; keep every bar.
+                lane = next((i for i, last in enumerate(label_lanes)
+                             if row.request_s-last > .014*(right-left)),
+                            min(range(len(label_lanes)), key=label_lanes.__getitem__))
+                label_lanes[lane] = row.request_s
+                label_y -= lane*.12
+            axes[0].annotate(label,xy=(row.request_s,label_y),xycoords=('data','axes fraction'),
                 xytext=(-4 if near_right else 4,0),textcoords='offset points',rotation=90,
                 va='top',ha='right' if near_right else 'left',fontsize=8,color=color)
         handles, labels = axes[0].get_legend_handles_labels()
         handles += [Line2D([0],[0],color=gray,lw=1.2,label='Event request with ACK'),
                     Line2D([0],[0],color=orange,lw=1.2,ls='--',label='Error / no ACK / feedback mismatch')]
         fig.legend(handles=handles,loc='outside lower center',ncol=3,fontsize=8,framealpha=.95)
-        axes[1].set_xlabel('Seconds since recording started (host clock)')
+        axes[-1].set_xlabel('Seconds since recording started (host clock)')
     return fig
 
 
