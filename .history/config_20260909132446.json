@@ -1,5 +1,5 @@
 {
-  "participant": "shenyuhan",
+  "participant": "shenyuhan-test",
   "session": "001",
   "output": "data",
   "display": {"size": [1200, 500], "fullscreen": true, "screen": 1},
@@ -17,7 +17,7 @@
     "number_of_trials": 10,
     "durations": {"pre_run": 1.0, "prepare": 1.0, "feedback": 45.0, "result": 1.0, "iti": 1.0},
     "grip_min": 0.81, "grip_max": 1.20, "smoothing": 1.0,
-    "forward_speed": 30.0, "lift_gain": 140.0, "gravity": 20.0, "damping": 0.98,
+    "forward_speed": 30.0, "lift_gain": 150.0, "gravity": 15.0, "damping": 0.98,
     "player_start": [20.0, 50.0], "player_size": [20.0, 20.0], "world_height": 90.0
   },
   "verbose": true
