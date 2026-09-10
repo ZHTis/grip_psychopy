@@ -6,6 +6,14 @@
 
 ### Mac 启动与跨平台串口
 
+#### 按设备序列号自动找端口
+
+`run_task.py` 支持在 `config.json` 顶层添加 `serial_devices`，其中 `grip`、`markers` 分别填写两块板的 USB 序列号（`--list-ports` 输出的 `SER=` 值）。确认板子用途后绑定一次，程序每次启动都会查询该设备当前的 Mac 或 Windows 端口，无需固定操作系统分配的端口名。
+
+当前已绑定：握力板 `14238313834351D0F031`，打标板 `44238313838351A02222`。Mac 和 Windows 共用此配置。
+
+优先级：显式 `--grip-port` / `--marker-port` > `serial_devices` 序列号 > 原有 `port`。Mac 启动脚本不再传入固定端口。序列号绑定的设备未连接或出现多个匹配时，实验启动前会报错，不会退回可能属于另一块板的旧端口。模拟模式不查询硬件。实际使用的端口与序列号配置一起保存在会话 metadata 中。
+
 串口名称直接交给 pyserial：Windows 使用 `COM6` 等名称，Mac 使用 `/dev/cu.usbmodem…` 或 `/dev/cu.usbserial…`。无需修改 Python 源码。
 
 Mac 在项目目录中执行：
@@ -13,9 +21,9 @@ Mac 在项目目录中执行：
 ```bash
 bash run_python.sh run_task.py --list-ports
 bash launch_simulation.command
-# 默认已配置：握力 /dev/cu.usbmodem1301，打标 /dev/cu.usbmodem1401
+# 默认按已绑定的 USB 序列号自动查找端口
 bash launch_hardware.command
-# 更换接口后，可以覆盖默认端口：
+# 如需临时手动指定端口（以下仅为示例）：
 bash launch_hardware.command --grip-port /dev/cu.usbmodem1301 --marker-port /dev/cu.usbmodem1401
 ```
 
@@ -24,12 +32,13 @@ Windows 在项目目录的 PowerShell 中执行：
 ```powershell
 .\run_python.bat run_task.py --list-ports
 .\launch_simulation.bat
+.\launch_hardware.bat
 .\launch_hardware.bat --grip-port COM6 --marker-port COM10
 ```
 
 命令行端口优先于 `config.json` 中的 `grip.port` / `markers.port`，只影响本次运行，不改写文件；实际使用的值会保存到会话 metadata。不传端口参数时仍使用配置文件。也可以为每台电脑准备配置文件，通过 `--config` 指定。两块板应使用不同端口，逐块插入并列出端口可以确认对应关系；程序不会自动猜测板子的用途。`--list-ports` 只列设备，不启动实验或创建数据会话。
 
-Mac 的 `run_python.sh` 依次选择 `GRIP_PYTHON`、项目 `.venv/bin/python`、`/Applications/PsychoPy.app` 内置 Python、PATH 中的 `python3`。使用内置 Python 时自动为子进程设置 `PYTHONHOME`。两个 `.command` 文件也可双击启动。`launch_hardware.command` 默认传入已确认的 Mac 端口：握力板（原 COM6）为 `/dev/cu.usbmodem1301`，打标板（原 COM10）为 `/dev/cu.usbmodem1401`；用户追加的端口参数可覆盖这些默认值，包括使用 `--config` 时。Windows 启动脚本仍使用配置文件中的 COM6 / COM10。
+Mac 的 `run_python.sh` 依次选择 `GRIP_PYTHON`、项目 `.venv/bin/python`、`/Applications/PsychoPy.app` 内置 Python、PATH 中的 `python3`。使用内置 Python 时自动为子进程设置 `PYTHONHOME`。两个 `.command` 文件也可双击启动。Mac 和 Windows 的硬件启动脚本默认按配置中的序列号识别设备；命令行端口参数可临时覆盖绑定。
 
 Python 解释器必须来自目标电脑上实际可用的环境；不能把开发电脑的虚拟环境目录直接复制过去当作已安装环境。
 

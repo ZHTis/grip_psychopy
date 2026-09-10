@@ -2,6 +2,10 @@
   "participant": "shenyuhan",
   "session": "001",
   "output": "data",
+  "serial_devices": {
+    "grip": "14238313834351D0F031",
+    "markers": "44238313838351A02222"
+  },
   "display": {"size": [1200, 500], "fullscreen": true, "screen": 1},
   "grip": {"port": "COM6", "baud": 115200, "gain": 1.0, "stale_timeout_s": 1.0},
   "markers": {

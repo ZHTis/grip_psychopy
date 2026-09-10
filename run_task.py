@@ -10,6 +10,7 @@ from gripflight.markers import MarkerOutput
 from gripflight.runtime import ContinuingRecorder, ContinuingDevices
 from gripflight.task import Task, load_map, validate_config
 from gripflight.paths import PROJECT_ROOT, project_path
+from gripflight.ports import resolve_ports
 
 
 def main():
@@ -35,11 +36,16 @@ def main():
     config_path = project_path(args.config)
     root = PROJECT_ROOT
     config = json.loads(config_path.read_text(encoding='utf-8-sig'))
+    overrides = {}
     for section, override in (('grip', args.grip_port), ('markers', args.marker_port)):
         if override is not None:
             if not override.strip():
                 parser.error(f'{section} port must not be empty')
-            config[section]['port'] = override.strip()
+            overrides[section] = override.strip()
+    try:
+        resolve_ports(config, overrides, simulate=args.simulate)
+    except ValueError as exc:
+        parser.error(str(exc))
     if args.marker_mode is not None:
         config['markers']['mode'] = args.marker_mode
     validate_config(config)
