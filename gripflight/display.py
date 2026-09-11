@@ -43,13 +43,13 @@ class Display:
         self.visual, self.event, self.config = visual, event, config
         d = config['display']
         self.win = visual.Window(size=d['size'], fullscr=d['fullscreen'], screen=d['screen'],
-                                 units='pix', color='black', allowGUI=True, waitBlanking=True)
+                                 units='height', color='black', allowGUI=True, waitBlanking=True)
         try:
             self.background = visual.ImageStim(self.win, image=str(rasterize(root/config['assets']['background'], root/'cache')),
-                                               size=self.win.size, autoLog=False)
+                                               size=(self.win.size[0]/self.win.size[1], 1), autoLog=False)
             self.player = visual.ImageStim(self.win, image=str(rasterize(root/config['assets']['player'], root/'cache')), autoLog=False)
             self.obstacles = [(o, visual.Rect(self.win, fillColor='gray', lineColor='gray', autoLog=False)) for o in objects]
-            self.text = visual.TextStim(self.win, color='white', height=self.win.size[1] * .12, autoLog=False)
+            self.text = visual.TextStim(self.win, color='white', height=.12, pos=(0, 0), autoLog=False)
             self.mouse = event.Mouse(win=self.win)
             from PIL import Image
             with Image.open(rasterize(root/config['assets']['player'], root/'cache')) as im:
@@ -61,16 +61,22 @@ class Display:
     def draw(self, task):
         ww, wh = self.win.size
         height = task.c['world_height']
-        scale = wh / height
+        # Height units use a vertical range of -0.5..0.5, independent of
+        # Retina pixel scaling. Preserve world geometry and the camera rule.
+        aspect = ww / wh
+        scale = 1.0 / height
+        self.background.size = (aspect, 1)
+        self.text.wrapWidth = aspect * .9
+        self.text.height = min(.12, aspect / 9)
         camera = max(0, task.x - (height * ww / wh) * .30)
         if task.phase in ('feedback', 'result'):
             self.background.draw()
             for o, stim in self.obstacles:
-                stim.pos = ((o['x'] - camera)*scale - ww/2, o['y']*scale - wh/2)
+                stim.pos = ((o['x'] - camera)*scale - aspect/2, o['y']*scale - .5)
                 stim.size = (o['width']*scale, o['height']*scale)
-                if abs(stim.pos[0]) <= ww/2 + stim.size[0]/2:
+                if abs(stim.pos[0]) <= aspect/2 + stim.size[0]/2:
                     stim.draw()
-            self.player.pos = ((task.x-camera)*scale-ww/2, task.y*scale-wh/2)
+            self.player.pos = ((task.x-camera)*scale-aspect/2, task.y*scale-.5)
             # BCI2000 AdjustWidth: aspect ratio follows image, collision box stays PlayerSize.
             bird_height = task.c['player_size'][1]*scale
             self.player.size = (bird_height*self.player_ratio, bird_height)
