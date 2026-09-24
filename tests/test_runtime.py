@@ -45,5 +45,19 @@ class RuntimeTests(unittest.TestCase):
             self.assertEqual(r.dropped_records, 1)
             r.close('complete')
 
+    def test_disabled_markers_record_local_events_without_ack_or_error(self):
+        with tempfile.TemporaryDirectory() as root:
+            r = ContinuingRecorder(root, {})
+            d = ContinuingDevices(r, .81, markers_enabled=False)
+            event_id = d.send('trial_start', 2)
+            self.assertIsNotNone(event_id)
+            rows = r.backend.db.execute("SELECT kind, payload FROM records").fetchall()
+            self.assertEqual(len(rows), 1)
+            self.assertEqual(rows[0][0], 'marker_request')
+            self.assertIn('"local_only": true', rows[0][1])
+            self.assertEqual(r.warnings, {})
+            self.assertEqual(r.backend.last_marker_code, 2)
+            r.close('complete')
+
 
 if __name__ == '__main__': unittest.main()

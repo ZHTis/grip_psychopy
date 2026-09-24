@@ -8,7 +8,10 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class TaskTests(unittest.TestCase):
-    def config(self): return json.loads((ROOT/'config.json').read_text())['task']
+    def config(self):
+        c = json.loads((ROOT/'config.json').read_text())['task']
+        c['sample_block_size'] = 32  # Original 125-ms reference behavior.
+        return c
 
     def test_original_timing_and_ten_trials(self):
         c = self.config()
@@ -39,6 +42,7 @@ class TaskTests(unittest.TestCase):
 
     def test_map_finish_and_physics(self):
         c = self.config(); c['durations']['pre_run'] = c['durations']['prepare'] = 0
+        c.update(lift_gain=150, gravity=15)  # Fixed reference, independent of participant settings.
         t = Task(c, [], 21)
         t.tick(.81); t.tick(1.20)
         self.assertAlmostEqual(t.x, 23.75)

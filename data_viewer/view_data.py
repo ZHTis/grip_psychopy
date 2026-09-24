@@ -116,6 +116,8 @@ def marker_table(events):
 def quality_summary(session):
     grip, events, task = session['grip'], session['events'], session['task']
     valid = grip[grip.kind.eq('grip')]
+    if 'valid' in valid:
+        valid = valid[~valid['valid'].astype(str).str.lower().eq('false')]
     dt = valid.t_host_s.diff()
     stale = session['metadata'].get('parameters', {}).get('grip', {}).get('stale_timeout_s', 1)
     markers = marker_table(events)

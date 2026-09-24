@@ -1,5 +1,6 @@
 """Run from PsychoPy Coder or: python run_task.py --simulate."""
 import argparse
+import copy
 import hashlib
 import json
 import time
@@ -11,6 +12,7 @@ from gripflight.runtime import ContinuingRecorder, ContinuingDevices
 from gripflight.task import Task, load_map, validate_config
 from gripflight.paths import PROJECT_ROOT, project_path
 from gripflight.ports import resolve_ports
+from gripflight.calibration import ExperimentSetup, run_calibration, CalibrationAborted, settings
 
 
 def main():
@@ -20,6 +22,10 @@ def main():
     parser.add_argument('--marker-port', help='Override marker port, e.g. COM10 or /dev/cu.usbmodem1401')
     parser.add_argument('--list-ports', action='store_true', help='List serial ports and exit without starting a session')
     parser.add_argument('--simulate', action='store_true', help='No hardware; mouse left/space gives full grip')
+    marker_switch = parser.add_mutually_exclusive_group()
+    marker_switch.add_argument('--no-markers', dest='markers_enabled', action='store_false', help='Real grip input, local events only; no marker board needed')
+    marker_switch.add_argument('--enable-markers', dest='markers_enabled', action='store_true', help='Enable hardware marker output')
+    parser.set_defaults(markers_enabled=None)
     parser.add_argument('--headless', action='store_true', help='Fast logic smoke test, requires --simulate')
     parser.add_argument('--marker-mode', choices=['loopback', 'output_only'], help='Override markers.mode for this run')
     args = parser.parse_args()
@@ -36,6 +42,10 @@ def main():
     config_path = project_path(args.config)
     root = PROJECT_ROOT
     config = json.loads(config_path.read_text(encoding='utf-8-sig'))
+    original_config = copy.deepcopy(config)
+    settings(config)
+    if args.markers_enabled is not None:
+        config['markers']['enabled'] = args.markers_enabled
     overrides = {}
     for section, override in (('grip', args.grip_port), ('markers', args.marker_port)):
         if override is not None:
@@ -49,6 +59,8 @@ def main():
     if args.marker_mode is not None:
         config['markers']['mode'] = args.marker_mode
     validate_config(config)
+    if config['task']['sample_block_size'] != 1 or config['task']['sampling_rate'] != config['grip'].get('sample_rate', 256):
+        parser.error('Ordered acquisition requires sample_block_size=1 and task sampling_rate=grip sample_rate')
     objects, finish = load_map(root/config['map'])
     task = Task(config['task'], objects, finish)
     config['runtime'] = {'simulate': args.simulate, 'headless': args.headless,
@@ -56,27 +68,49 @@ def main():
                           for p in [config['map'], *config['assets'].values()]},
         'effective_phase_blocks': task.durations, 'dt_s': task.dt}
     recorder = ContinuingRecorder(root/config['output'], config)
-    devices = ContinuingDevices(recorder, config['task']['grip_min'])
+    devices = ContinuingDevices(recorder, config['task']['grip_min'],
+                                markers_enabled=config['markers'].get('enabled', True))
     grip = marker = display = None
     status = 'error'
+    setup = None
     try:
+        setup = ExperimentSetup(recorder, original_config, config, (root/config['map']).read_bytes(), objects)
         if not args.headless:
             from gripflight.display import Display
             display = Display(config, root, objects)
         try:
             grip = GripReader(recorder, simulate=args.simulate,
-                              **{k: config['grip'][k] for k in ('port', 'baud', 'gain')}).start()
+                              ordered=True, **{k: v for k, v in config['grip'].items() if k != 'stale_timeout_s'}).start()
             devices.grip = grip
         except Exception as exc:
             devices.warning('grip_start', exc)
-        try:
-            if not args.simulate and (not config['markers']['port'] or
-                    config['markers']['port'].upper() == config['grip']['port'].upper()):
-                raise ValueError('Marker port missing or same as grip port')
-            marker = MarkerOutput(recorder, simulate=args.simulate, **config['markers'])
-            devices.marker = marker
-        except Exception as exc:
-            devices.warning('marker_start', exc)
+        if devices.markers_enabled:
+            try:
+                if not args.simulate and (not config['markers']['port'] or
+                        config['markers']['port'].upper() == config['grip']['port'].upper()):
+                    raise ValueError('Marker port missing or same as grip port')
+                marker = MarkerOutput(recorder, simulate=args.simulate, **{k: v for k, v in config['markers'].items() if k != 'enabled'})
+                devices.marker = marker
+            except Exception as exc:
+                devices.warning('marker_start', exc)
+        else:
+            print('Hardware markers disabled; real grip input and local event recording remain active.')
+        run_calibration(display, grip, recorder, config, setup)
+        validate_config(config)
+        devices.fallback_raw = config['task']['grip_min']
+        # Recreate the task after calibration; run_start belongs to the task, not calibration.
+        task = Task(config['task'], objects, finish)
+        if not args.headless:
+            if grip is None:
+                raise RuntimeError('Grip reader unavailable')
+            grip.wait_ready()
+            grip.begin_task()
+        setup.data['grip_acquisition_id'] = grip.acquisition_id if grip else None
+        setup.data['status'] = 'task_running'
+        setup.save()
+        recorder.set_context(trial=0, block=1, phase='pre_run')
+        if recorder.backend:
+            recorder.backend._metadata()
         next_tick = time.perf_counter()
         last_flush = next_tick
         def emit(name, snapshot):
@@ -95,20 +129,24 @@ def main():
                         devices.send('abort', config['markers']['codes']['abort'], reason='escape')
                         break
                     if args.simulate and grip:
-                        grip.simulated_voltage = config['task']['grip_max'] if (
-                            display.mouse.getPressed()[0] or 'space' in keys) else config['task']['grip_min']
+                        grip.simulated_voltage = (config['task']['grip_max'] if (
+                            display.mouse.getPressed()[0] or 'space' in keys) else config['task']['grip_min']) / abs(config['grip']['gain'])
                 now = time.perf_counter()
-                if args.headless or now >= next_tick:
-                    if not args.headless and now-next_tick > max(.5, 2*task.dt):
-                        devices.warning('timing', f'Task update late by {now-next_tick:.3f}s; resuming without catch-up')
-                        next_tick = now
-                    sample = devices.sample(config['grip']['stale_timeout_s'])
-                    task.tick(sample['raw'])
+                samples = ([dict(raw=config['task']['grip_min'], valid=True, record_id=None,
+                                 device_sequence=None, acquisition_id=None, t=None)]
+                           if args.headless else grip.take_samples())
+                for sample in samples:
+                    used_at = recorder.now()
+                    physics_used = task.phase == 'feedback' and sample['valid']
+                    task.tick(sample['raw'], valid=sample['valid'])
                     recorder.set_context(trial=task.trial, block=1, phase=task.phase)
                     recorder.record('task', dict(task.snapshot(), grip_sample_id=sample['record_id'],
-                                                grip_input_status=sample['input_status'], grip_age_s=sample['age_s'],
-                                                scheduled_lateness_s=0 if args.headless else now-next_tick))
-                    next_tick += task.dt
+                        grip_valid=sample['valid'], grip_device_sequence=sample.get('device_sequence'),
+                        grip_acquisition_id=sample.get('acquisition_id'), task_use_host_s=used_at,
+                        grip_task_used=physics_used,
+                        grip_age_s=used_at-sample['t'] if sample['t'] is not None else None))
+                    if task.phase == 'complete':
+                        break
                 events = task.take_events()
                 if display:
                     display.draw(task)
@@ -126,9 +164,8 @@ def main():
                     status = 'complete'
                     break
             except Exception as exc:
-                devices.warning('runtime', exc)
-                next_tick = time.perf_counter() + task.dt
-                time.sleep(.01)
+                recorder.record('diagnostic', {'category': 'runtime', 'error': str(exc), 'continued': False})
+                raise
         if display and status == 'complete':
             deadline = time.perf_counter() + 1
             while time.perf_counter() < deadline:
@@ -136,6 +173,9 @@ def main():
                     break
                 display.draw(task)
                 display.win.flip()
+    except CalibrationAborted:
+        status = 'aborted'
+        devices.send('abort', config['markers']['codes']['abort'], reason='escape_during_calibration')
     except BaseException as exc:
         recorder.record('diagnostic', {'error': repr(exc)})
         if marker:
@@ -156,6 +196,14 @@ def main():
         if cleanup_errors:
             recorder.warn('cleanup', '; '.join(cleanup_errors))
             recorder.record('diagnostic', {'cleanup_errors': cleanup_errors})
+        if setup is not None:
+            setup.data['status'] = status
+            setup.data['runtime_warnings'] = dict(recorder.warnings)
+            setup.data['dropped_records'] = recorder.dropped_records
+            try:
+                setup.save()
+            except Exception as exc:
+                recorder.warn('setup_save', exc)
         recorder.close(status)
         print('Session:', recorder.directory)
         print('Status:', status)

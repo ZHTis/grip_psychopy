@@ -51,17 +51,17 @@ class Task:
         events, self.events = self.events, []
         return events
 
-    def tick(self, raw):
+    def tick(self, raw, valid=True):
         """One original source sample block, including same-block phase transitions."""
         if self.phase == 'complete':
             return
         while True:
             progress = self.blocks >= self.durations[self.phase]
-            if self.phase == 'feedback':
+            if self.phase == 'feedback' and valid:
                 self.raw = abs(raw)
                 self.normalized = max(0, min(1, (self.raw - self.c['grip_min']) /
                                             (self.c['grip_max'] - self.c['grip_min'])))
-                self.smoothed += self.c['smoothing'] * (self.normalized - self.smoothed)
+                self.smoothed += (1-(1-self.c['smoothing'])**(self.dt/.125)) * (self.normalized - self.smoothed)
                 self.x += self.c['forward_speed'] * self.dt
                 self.vy += (self.c['lift_gain'] * self.smoothed - self.c['gravity']) * self.dt
                 self.vy *= self.c['damping'] ** (self.dt * 60)

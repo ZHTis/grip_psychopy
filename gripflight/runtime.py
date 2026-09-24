@@ -58,9 +58,10 @@ class ContinuingRecorder:
 
 
 class ContinuingDevices:
-    def __init__(self, recorder, fallback_raw):
+    def __init__(self, recorder, fallback_raw, markers_enabled=True):
         self.recorder, self.fallback_raw = recorder, fallback_raw
         self.grip = self.marker = None
+        self.markers_enabled = markers_enabled
         self.marker_failed = False
         self.last_grip_state = None
 
@@ -97,6 +98,10 @@ class ContinuingDevices:
                 self.warning('marker', exc)
 
     def send(self, name, code, **details):
+        if not self.markers_enabled:
+            return self.recorder.record('marker_request', dict(name=name, code=code,
+                output_available=False, hardware_output_enabled=False,
+                local_only=True, **details))
         self.check_marker()
         if self.marker and not self.marker_failed:
             try:

@@ -4,11 +4,12 @@
 def resolve_ports(config, overrides=None, simulate=False, ports=None):
     overrides = overrides or {}
     identities = config.get('serial_devices', {})
+    roles = ('grip', 'markers') if config['markers'].get('enabled', True) else ('grip',)
     if not simulate and any(identities.get(k) and not overrides.get(k)
-                            for k in ('grip', 'markers')) and ports is None:
+                            for k in roles) and ports is None:
         from serial.tools import list_ports
         ports = list(list_ports.comports())
-    for role in ('grip', 'markers'):
+    for role in roles:
         if overrides.get(role):
             config[role]['port'] = overrides[role]
         elif not simulate and identities.get(role):
@@ -19,5 +20,5 @@ def resolve_ports(config, overrides=None, simulate=False, ports=None):
                                  f'{serial_number}, found {len(matches)}. '
                                  'Connect the correct board and use --list-ports to check.')
             config[role]['port'] = matches[0]
-    if not simulate and config['grip']['port'].casefold() == config['markers']['port'].casefold():
+    if not simulate and 'markers' in roles and config['grip']['port'].casefold() == config['markers']['port'].casefold():
         raise ValueError('Grip and marker boards must use different serial ports.')

@@ -35,3 +35,11 @@ class PortTests(unittest.TestCase):
         self.assertEqual(c['grip']['port'], 'COM6')
         with self.assertRaises(ValueError):
             resolve_ports(c, {'grip': 'COM10'}, ports=[])
+
+    def test_disabled_markers_still_resolve_real_grip(self):
+        c = self.config()
+        c['markers']['enabled'] = False
+        resolve_ports(c, ports=[SimpleNamespace(device='COM10', serial_number='grip-id')])
+        self.assertEqual(c['grip']['port'], 'COM10')
+        with self.assertRaises(ValueError):
+            resolve_ports(c, ports=[])

@@ -16,6 +16,30 @@ Mac 使用 `bash launch_simulation.command` 模拟运行。串口可通过 `--gr
 
 依赖：PsychoPy、pyserial、Pillow、PyQt6。请确认目标电脑的实验环境带有这些组件。若使用其他环境，在该环境安装 `requirements.txt`，并单独安装兼容的 PsychoPy。无需修改启动脚本路径，按 PORTABILITY.md 选择解释器即可。
 
+## 实验前握力校准
+
+默认开启 `config.json.calibration.enabled`。每次启动先等待传感器数据，然后按顺序：
+
+1. “正在准备 请勿触碰”：采集 5 秒零握力。
+2. “最大力度握紧”：1 秒计时进度条，采集第 1 次峰值。
+3. “请松开握力器 休息”：倒计时 30 秒。
+4. 再握紧 1 秒，休息 30 秒，再握紧 1 秒，共 3 次。
+5. 显示零点、三个峰值、参考最大值、实际 lift_gain 及理论平衡比例；按空格进入原任务，Esc 结束并保留已采数据。
+
+零点取 `abs(voltage × grip.gain)` 的中位数，三个峰值取各自测量窗口内全部有效采样的最大值，参考最大握力取三个峰值中的最大值。正式任务使用本次零点作为 `grip_min`、参考最大值作为 `grip_max`。记录仍是传感器电压/增益后的数值，没有标定成 N 或 kg；一秒窗口内的峰值不等同于经其他测量协议验证的生理最大力。
+
+默认 `lift_mode="keep"` 保留配置中的 `task.lift_gain`。稳态参考公式为 `平衡握力比例 = gravity / lift_gain`。例如 gravity=25、lift_gain=140，对应本次校准范围的约 17.9%。这只表示持续归一化输入下升力与重力相等，不保证小鸟在任意速度或地图位置悬停。
+
+如要按目标比例计算，可设 `calibration.lift_mode="target_fraction"`，并设置 `target_fraction`（例如 0.2 表示 20%）；此时实际 `lift_gain=gravity/target_fraction`。配置文件本身不会被运行过程改写。
+
+每次 session 新增 **`experiment_setup.json`**：同一个文件包含零点/三次握力的完整采样（电压、raw、主机时间、记录 ID）、各次统计与峰值样本、校准参考、lift_gain 候选参考、实际 lift_gain、原始配置、生效配置、地图 CSV 全文/解析对象/SHA256、模拟标识和最终状态。校准中定期保存，结束后更新；原始 `grip.csv` / SQLite 仍保存完整采样，校准样本的 phase 为 `calibration_*`、trial=0。校准阶段事件仅保存为本地 `event`，不新增 Arduino 事件码；正式任务的打标规则保持原样。
+
+校准不使用过期/保持值。采样不足、连续间断超过 `max_gap_s`（默认 0.3 秒），或任一次握力峰值没有超过零点至少 `max(min_range, 5×零点标准差)`，会停止进入正式实验；修复连接或重新测量后再启动。要求已创建可写的 session 目录，以保存这份实验配置。正式任务开始后的持续运行策略仍适用。
+
+`zero_s`、`squeeze_s`、`rest_s` 可调整时长；`min_samples`、`max_gap_s`、`min_range` 可按实际传感器采样率设置。`font="auto"` 在 Mac 使用 PingFang SC、Windows 使用 Microsoft YaHei，也可指定已安装的中文字体。
+
+模拟模式也显示校准：零点和休息时松开鼠标，三次握紧提示出现时按住鼠标左键，第三次结束后松开并按空格进入任务。模拟记录明确标记。`--simulate --headless` 是快速逻辑测试，跳过校准且在归档中标记 `skipped_headless`；不要把这类记录当作实际校准。
+
 ## 原任务逻辑及参数
 
 迁移依据：`src/core/Application/GripFlightTask/GripFlightTask.cpp`、`FlightPhysics.cpp`、`SideScrollScene.cpp`、`MapLoader.cpp`，以及 `src/shared/modules/application/FeedbackTask.cpp`。
@@ -135,3 +159,42 @@ python test_module.py markers --port COM10 --mode loopback
 ```
 
 测试终端会打印 TX/RX 及逐位回读比对，结果保存在测试会话的 `events.csv`。任务中需要回读时使用 `python run_task.py --marker-mode loopback`；正常任务直接运行 `python run_task.py`。请使用已安装 PsychoPy 的 Python 环境，并关闭其他占用该串口的软件。固件需支持本项目的 M（回读）和 O（仅输出）命令。
+
+### 仅握力计运行（暂不硬件打标）
+
+当前 config.json 的 markers.enabled 为 false：正常读取真实握力、进行校准和实验，不查找或连接打标板。所有事件仍在本地记录，但不生成硬件 ACK/DONE。启动命令不变，不要加 --simulate。
+
+临时关闭硬件打标可加 --no-markers；恢复打标可将 markers.enabled 改为 true，或启动时加 --enable-markers。关闭期间事件 payload 标记 local_only=true，不能视为已向外部设备发送 TTL。
+
+### 2026-09-24 握力采集协议升级
+
+迁移来源：ZHTis/bci2000-grip 提交 26a037f7e1f6e01c7101e775472e177d0f13375b。
+固件原样保存于 arduino/sketch_common_analog/sketch_common_analog.ino。
+适用于经典 UNO AVR、A0、5 V / 10-bit ADC。请确认实际板型及接线再上传；本次未自动刷写设备。
+
+现在握力串口为 250000 baud，固件平均采样率 256 Hz，输出
+`0.00,voltage,sequence,device_micros`；第一项是占位值，不是真实温度。
+设备时间记录在 analogRead 之前，电压只有固件传输的三位小数，不是原始 ADC counts。
+启动等待 2 秒并清除串口缓存、丢弃第一条可能不完整的行。默认 require_timing=true，旧两列固件会明确报错。
+兼容旧固件时需显式设 require_timing=false、baud 为原值，且 grip.sample_rate 和 task.sampling_rate 必须填写真实采样率。
+
+每条采样保存到 SQLite 和 grip.csv；任务按采样顺序逐条消费，sample_block_size=1。
+屏幕每帧可处理多个采样，事件仍在下一次显示翻转时发送，故非 256 Hz 显示或逐采样 TTL。
+物理积分按秒，平滑参数按原 125 ms 时间尺度换算。数值轨迹可能与旧步长不同，请重新确认任务难度。
+最多 10 个缺失序号保存为 valid=false，值和设备/接收时间为空；任务时间继续，缺口不驱动物理更新。
+长缺口、重复/倒退序号、设备重置、不匹配的设备周期、超过 250 ms 的任务队列积压或 1 秒无数据会停止任务并保存。
+不再用上一条读数无限继续。数据查看时必须排除 valid=false，不能把缺口填为零握力。
+
+每次采集生成 acquisition_id；task.csv 的 grip_sample_id 精确关联 SQLite/grip.csv 记录 ID，
+并保存 task_use_host_s、grip_task_used、设备序号。主机时间均为本 session 的 perf_counter 相对秒。
+每 0.5 秒请求一次 Q,id，固件返回 S,id,t2,t3，四时间戳保存在 grip_sync.csv。
+离线估计设备时钟到主机时钟：
+
+```bash
+python -m gripflight.timing /绝对路径/某次session --output /绝对路径/某次session/timing
+```
+
+导出 samples.csv、sync_exchanges.csv、task_use.csv、timing_metadata.json。
+使用低 RTT 三分之一交换拟合仿射时钟；证据不足则只估偏移，无交换则 unavailable。
+保留原始时间、处理 uint32 回绕并标注外推。RTT 和残差不是绝对误差上界；不代表 EEG 已同步。
+当前 markers.enabled=false 继续有效：真实握力、本地事件、无硬件打标。

@@ -69,9 +69,9 @@ class Recorder:
             self.db.commit()
             for name, kinds in {'grip': ['grip', 'grip_invalid'],
                                 'events': ['marker_request', 'marker_ack', 'marker_done', 'marker_error', 'event'],
-                                'task': ['task'], 'trials': ['trial'], 'diagnostics': ['diagnostic']}.items():
+                                'task': ['task'], 'trials': ['trial'], 'diagnostics': ['diagnostic'], 'grip_sync': ['grip_sync']}.items():
                 flat_columns = {
-                    'grip': ['temperature', 'voltage', 'raw', 'line', 'error'],
+                    'grip': ['temperature', 'voltage', 'raw', 'line', 'error', 'valid', 'device_timed', 'device_sequence', 'device_micros', 'acquisition_id', 'simulated'],
                     'events': ['name', 'event_id', 'code', 'pulse_ms', 't_write_host_s',
                                'device_micros', 'simulated', 'error', 'a0_adc', 'loopback_pin',
                                'a0_expected_high', 'a0_measured_high', 'a0_matches_expected',
@@ -79,9 +79,10 @@ class Recorder:
                                'mismatch_mask', 'readback_matches_expected', 'mismatched_output_pins',
                                'mismatched_feedback_pins', 'output_pins', 'feedback_pins', 'mapping_source'],
                     'task': ['tick', 'game_phase', 'x', 'y', 'vy', 'raw', 'normalized', 'smoothed',
-                             'result', 'collision_object', 'reason', 'grip_sample_id', 'scheduled_lateness_s'],
+                             'result', 'collision_object', 'reason', 'grip_sample_id', 'scheduled_lateness_s', 'grip_valid', 'grip_device_sequence', 'grip_acquisition_id', 'task_use_host_s', 'grip_task_used', 'grip_age_s'],
                     'trials': ['result', 'reason', 'feedback_steps', 'x', 'y', 'collision_object'],
                     'diagnostics': ['error'],
+                    'grip_sync': ['acquisition_id', 'sync_id', 'host_t1_s', 'host_t4_s', 'device_t2_us', 'device_t3_us'],
                 }[name]
                 rows = self.db.execute('SELECT * FROM records WHERE kind IN (' +
                                        ','.join('?' for _ in kinds) + ') ORDER BY t,id', kinds)

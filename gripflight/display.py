@@ -89,5 +89,35 @@ class Display:
             self.text.draw()
         return camera
 
+    def draw_calibration(self, title, detail, progress):
+        if not hasattr(self, 'cal_title'):
+            from .calibration import settings
+            font = settings(self.config)['font']
+            if font == 'auto':
+                import sys
+                font = 'PingFang SC' if sys.platform == 'darwin' else (
+                    'Microsoft YaHei' if sys.platform == 'win32' else 'Noto Sans CJK SC')
+            self.cal_title = self.visual.TextStim(self.win, font=font, color='white',
+                units='height', height=.055, pos=(0,.3), autoLog=False)
+            self.cal_detail = self.visual.TextStim(self.win, font=font, color='white',
+                units='height', height=.03, pos=(0,.02), autoLog=False)
+            self.cal_track = self.visual.Rect(self.win, units='height', height=.035,
+                pos=(0,-.32), fillColor='#333333', lineColor=None, autoLog=False)
+            self.cal_fill = self.visual.Rect(self.win, units='height', height=.035,
+                fillColor='#55B8CF', lineColor=None, autoLog=False)
+        aspect = self.win.size[0]/self.win.size[1]
+        width = min(1.0, aspect*.8)
+        self.cal_title.wrapWidth = self.cal_detail.wrapWidth = aspect*.9
+        self.cal_title.text, self.cal_detail.text = title, detail
+        self.cal_title.draw()
+        self.cal_detail.draw()
+        self.cal_track.width = width
+        self.cal_track.draw()
+        progress = max(0, min(1, progress))
+        if progress:
+            self.cal_fill.width = width*progress
+            self.cal_fill.pos = (-width/2 + width*progress/2,-.32)
+            self.cal_fill.draw()
+
     def close(self):
         self.win.close()
