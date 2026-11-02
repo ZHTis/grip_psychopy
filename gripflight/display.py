@@ -1,5 +1,7 @@
 """PsychoPy rendering; original SVG files rasterized without redesign."""
 import hashlib
+
+from .gl_safety import set_text_layout
 from pathlib import Path
 
 _qt_app = None
@@ -39,11 +41,16 @@ def rasterize(path, cache):
 
 class Display:
     def __init__(self, config, root, objects):
+        from .gl_safety import install
+        self._gl_thread_guard = install()
         from psychopy import visual, event
         self.visual, self.event, self.config = visual, event, config
         d = config['display']
         self.win = visual.Window(size=d['size'], fullscr=d['fullscreen'], screen=d['screen'],
-                                 units='height', color='black', allowGUI=True, waitBlanking=True)
+                                 units='height', color='black', allowGUI=True, waitBlanking=True, pos=d.get('pos'))
+        if self._gl_thread_guard:
+            from .gl_safety import manage_window
+            manage_window(self.win, visual)
         try:
             self.background = visual.ImageStim(self.win, image=str(rasterize(root/config['assets']['background'], root/'cache')),
                                                size=(self.win.size[0]/self.win.size[1], 1), autoLog=False)
@@ -55,28 +62,41 @@ class Display:
             with Image.open(rasterize(root/config['assets']['player'], root/'cache')) as im:
                 self.player_ratio = im.width / im.height
         except BaseException:
-            self.win.close()
+            self.close()
             raise
 
+    def content_bounds(self):
+        """Horizontal drawing area; legacy UNO uses the full window."""
+        aspect = self.win.size[0]/self.win.size[1]
+        return -aspect/2, aspect
+
+    def _release_pending_gl(self):
+        if getattr(self, '_gl_thread_guard', False):
+            from .gl_safety import drain
+            drain(self.win)
+
     def draw(self, task):
+        self._release_pending_gl()
         ww, wh = self.win.size
         height = task.c['world_height']
         # Height units use a vertical range of -0.5..0.5, independent of
         # Retina pixel scaling. Preserve world geometry and the camera rule.
-        aspect = ww / wh
+        left, aspect = self.content_bounds()
+        center = left + aspect/2
         scale = 1.0 / height
         self.background.size = (aspect, 1)
-        self.text.wrapWidth = aspect * .9
-        self.text.height = min(.12, aspect / 9)
-        camera = max(0, task.x - (height * ww / wh) * .30)
+        self.background.pos = (center, 0)
+        self.text.pos = (center, 0)
+        set_text_layout(self.text, wrapWidth=aspect*.9, height=min(.12, aspect/9))
+        camera = max(0, task.x - (height * aspect) * .30)
         if task.phase in ('feedback', 'result'):
             self.background.draw()
             for o, stim in self.obstacles:
-                stim.pos = ((o['x'] - camera)*scale - aspect/2, o['y']*scale - .5)
+                stim.pos = ((o['x'] - camera)*scale + left, o['y']*scale - .5)
                 stim.size = (o['width']*scale, o['height']*scale)
-                if abs(stim.pos[0]) <= aspect/2 + stim.size[0]/2:
+                if abs(stim.pos[0]-center) <= aspect/2 + stim.size[0]/2:
                     stim.draw()
-            self.player.pos = ((task.x-camera)*scale-aspect/2, task.y*scale-.5)
+            self.player.pos = ((task.x-camera)*scale+left, task.y*scale-.5)
             # BCI2000 AdjustWidth: aspect ratio follows image, collision box stays PlayerSize.
             bird_height = task.c['player_size'][1]*scale
             self.player.size = (bird_height*self.player_ratio, bird_height)
@@ -90,6 +110,17 @@ class Display:
         return camera
 
     def draw_calibration(self, title, detail, progress):
+        self._release_pending_gl()
+        observer = getattr(self, 'calibration_observer', None)
+        if observer:
+            observer(title)
+        feedback = getattr(self, 'uno_orb_feedback', None)
+        if feedback is not None:
+            if not hasattr(self, '_uno_orb_renderer'):
+                from .uno_feedback import OrbFeedback
+                self._uno_orb_renderer = OrbFeedback(self)
+            self._uno_orb_renderer.draw(title, detail, feedback)
+            return
         if not hasattr(self, 'cal_title'):
             from .calibration import settings
             font = settings(self.config)['font']
@@ -105,9 +136,13 @@ class Display:
                 pos=(0,-.32), fillColor='#333333', lineColor=None, autoLog=False)
             self.cal_fill = self.visual.Rect(self.win, units='height', height=.035,
                 fillColor='#55B8CF', lineColor=None, autoLog=False)
-        aspect = self.win.size[0]/self.win.size[1]
+        left, aspect = self.content_bounds()
+        center = left + aspect/2
+        self.cal_title.pos, self.cal_detail.pos = (center,.3), (center,.02)
+        self.cal_track.pos = (center,-.32)
         width = min(1.0, aspect*.8)
-        self.cal_title.wrapWidth = self.cal_detail.wrapWidth = aspect*.9
+        set_text_layout(self.cal_title, wrapWidth=aspect*.9)
+        set_text_layout(self.cal_detail, wrapWidth=aspect*.9)
         self.cal_title.text, self.cal_detail.text = title, detail
         self.cal_title.draw()
         self.cal_detail.draw()
@@ -116,8 +151,12 @@ class Display:
         progress = max(0, min(1, progress))
         if progress:
             self.cal_fill.width = width*progress
-            self.cal_fill.pos = (-width/2 + width*progress/2,-.32)
+            self.cal_fill.pos = (center-width/2 + width*progress/2,-.32)
             self.cal_fill.draw()
 
     def close(self):
-        self.win.close()
+        if getattr(self, '_gl_thread_guard', False):
+            from .gl_safety import close_window
+            close_window(self.win)
+        else:
+            self.win.close()

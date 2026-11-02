@@ -46,3 +46,40 @@ python data_viewer/export_grip_ppt.py --data-root "指定的数据文件夹" --o
 只读原项目的 CSV，不读取串口、不修改原始数据。电压单位为 V，尚未转换成实际力。超时期间任务可能保持旧值，任务输入图与原始采样图分开显示。打标请求、硬件/模拟 ACK、DONE 和失败分别展示。所有横轴是电脑时钟；Arduino micros 不直接叠加到该横轴。
 
 图形设计：两张共享时间轴的图：上图在原始电压上叠加 event marker 竖条和名称/码值，下图显示任务输入；ACK/DONE 详细时间保留在核对表；蓝色表示采样/正常事件，橙色和叉号表示异常，灰色辅助标记。数据过少时仍显示样本点，空数据明确标为空；不插值填补丢失数据。
+
+
+## 25 通道数据查看器（RX-G0505M）
+
+这是独立的离线浏览器工具，不依赖 pandas、绘图库或联网。Mac 双击项目根目录的 `launch_data_viewer.command`，或直接用浏览器打开 `data_viewer/multichannel_viewer.html`。Windows 可双击 `launch_data_viewer.bat`，也可直接打开 HTML。
+
+进入页面后点击“选择 CSV”选择 `grip_multichannel.csv`，或点“选择数据文件夹”选择单次会话/多次记录的父目录。父目录内的各次记录分别列出，默认打开名称排序最后一条，不会拼成一条曲线。浏览器若不支持文件夹选择，可直接选择 CSV。
+
+- 25 通道曲线：点击通道按钮筛选，也可仅显示有响应的通道；点击右侧手形测点可单独查看。
+- 压力热图：显示各通道随时间变化的读数。时间密集时每像素保留峰值；曲线保留每像素最小/最大值，避免简单抽点漏掉短时峰值。
+- 回放：拖动时间滑块、点击图上的时间或播放。手形和数值表同步显示该时刻最近一帧；断流时会注明数据年龄，不插值造出新样本。
+- 起点/终点以 `t_host_s` 为准，即本次会话开始后的电脑接收秒数；可查看片段或恢复全程。
+- 设备协议手别与显示手别独立。文件夹中有 `experiment_setup.json` 时读取其设置；单独选择 CSV 默认右手显示，设备帧仍保持原有 left/right 标识。左右手数据分别查看，不混合。
+- 数值均为原始通道值，未扣零、未加权，g 为设备上报单位。全程峰值和接收速率按当前所选协议手别计算。页面会标识模拟数据及跳过的异常行。
+
+也可以用命令直接指定数据路径（相对路径以项目根目录为准）：
+
+```bash
+bash launch_data_viewer.command --data-root "data/weighted/某次会话"
+bash launch_data_viewer.command --data-root "/绝对路径/grip_multichannel.csv"
+python data_viewer/view_multichannel.py --data-root "data/weighted" --no-open
+```
+
+指定路径时会把数据嵌入一个可独立打开的 HTML，默认保存在 `data_viewer/exports/multichannel_时间戳.html`，可用 `--output` 指定文件；已有输出不覆盖。该 exports 目录已被 Git 忽略，不推送。单次嵌入上限 200 MB；更大数据请在空白查看器中选择文件夹，按会话读取。原始 CSV 和 JSON 不会被修改；不启动服务器或读取串口。
+
+
+## UNO 采样率与缺点审计
+
+`tools/analyze_grip_quality.py` 只读查询 SQLite（包含已提交 WAL），选择最近五次含真实、带设备时间戳的 UNO 记录；输出原始电压、阶段色带、每秒主机帧数、设备／主机间隔、序号缺失图及 JSON 统计。
+
+```bash
+cd /Users/heting/Documents/grip_psychopy
+MPLCONFIGDIR=/private/tmp/grip_quality_mpl bash run_python.sh tools/analyze_grip_quality.py \
+  --data-root data --count 5 --output data_viewer/exports/quality_latest
+```
+
+设备采样率由序号增量除以设备微秒增量计算；主机接收率独立计算，启动批量接收可能抬高平均值。序号缺失与退出时半行分开计数；首次序号之前、末帧之后不推算丢点。`recording` 会话只是落盘快照，不能当作完整记录；JSON 保留快照时间及各会话最后记录 ID。图中样本率基于设备自带时钟，未进行外部时钟校准。结果目录 exports 沿用忽略规则，不推送。

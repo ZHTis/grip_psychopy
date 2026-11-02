@@ -32,7 +32,7 @@ class PortabilityTests(unittest.TestCase):
             self.assertFalse((moved/'configs/data').exists())
             self.assertFalse((Path(temp)/'data').exists())
             setup = json.loads((outputs[0].parent/'experiment_setup.json').read_text())
-            self.assertEqual(setup['calibration']['status'], 'skipped_headless')
+            self.assertEqual(setup['calibration']['status'], 'debug_skipped')
             self.assertEqual(setup['status'], 'complete')
             self.assertEqual(setup['map']['csv_text'], (moved/config['map']).read_text(encoding='utf-8-sig'))
             metadata = json.loads(outputs[0].read_text())

@@ -67,10 +67,24 @@ class Recorder:
         """CSV keeps all fields; event CSV is the lossless marker channel alongside grip."""
         with self.lock:
             self.db.commit()
-            for name, kinds in {'grip': ['grip', 'grip_invalid'],
+            exports = {'grip': ['grip', 'grip_invalid'],
                                 'events': ['marker_request', 'marker_ack', 'marker_done', 'marker_error', 'event'],
-                                'task': ['task'], 'trials': ['trial'], 'diagnostics': ['diagnostic'], 'grip_sync': ['grip_sync']}.items():
+                                'task': ['task'], 'trials': ['trial'], 'diagnostics': ['diagnostic'], 'grip_sync': ['grip_sync']}
+            # Only add these exports to sessions containing the new device.
+            if self.db.execute("SELECT 1 FROM records WHERE kind LIKE 'grip_multichannel%' LIMIT 1").fetchone():
+                exports.update({name: [name] for name in (
+                    'grip_multichannel', 'grip_multichannel_bytes', 'grip_multichannel_summary')})
+            if self.db.execute("SELECT 1 FROM records WHERE kind='weight_update' LIMIT 1").fetchone():
+                exports['weight_updates'] = ['weight_update']
+            for name, kinds in exports.items():
                 flat_columns = {
+                    'weight_updates': ['revision', 'reason', 'lift_gain', 'reference_scale', 'calibrated'],
+                    'grip_multichannel': ['hand', 'hand_code', 'received_index', 'host_unix_s',
+                        'acquisition_id', 'valid', 'simulated', 'device_timed', 'device_sequence',
+                        'device_micros', 'frame_hex'] + [f'point_{i:02d}_g' for i in range(1, 26)],
+                    'grip_multichannel_bytes': ['acquisition_id', 'host_unix_s', 'byte_count', 'chunk_hex', 'simulated'],
+                    'grip_multichannel_summary': ['acquisition_id', 'bytes_received', 'valid_frames',
+                        'checksum_errors', 'discarded_bytes', 'pending_bytes', 'queued_frames', 'simulated'],
                     'grip': ['temperature', 'voltage', 'raw', 'line', 'error', 'valid', 'device_timed', 'device_sequence', 'device_micros', 'acquisition_id', 'simulated'],
                     'events': ['name', 'event_id', 'code', 'pulse_ms', 't_write_host_s',
                                'device_micros', 'simulated', 'error', 'a0_adc', 'loopback_pin',
@@ -79,7 +93,10 @@ class Recorder:
                                'mismatch_mask', 'readback_matches_expected', 'mismatched_output_pins',
                                'mismatched_feedback_pins', 'output_pins', 'feedback_pins', 'mapping_source'],
                     'task': ['tick', 'game_phase', 'x', 'y', 'vy', 'raw', 'normalized', 'smoothed',
-                             'result', 'collision_object', 'reason', 'grip_sample_id', 'scheduled_lateness_s', 'grip_valid', 'grip_device_sequence', 'grip_acquisition_id', 'task_use_host_s', 'grip_task_used', 'grip_age_s'],
+                             'result', 'collision_object', 'reason', 'grip_sample_id', 'scheduled_lateness_s', 'grip_valid', 'grip_device_sequence', 'grip_acquisition_id', 'task_use_host_s', 'grip_task_used', 'grip_age_s', 'input_reused', 'input_hand', 'display_hand', 'input_normalized', 'weight_revision', 'weighted_g', 'reference_g', 'lift_gain', 'applied_lift',
+                             'calibration_id', 'calibration_valid', 'debug_mode', 'absolute_value', 'absolute_unit',
+                             'baseline_value', 'calibration_range', 'relative_calibrated', 'percent_calibrated'] +
+                            [f'point_{i:02d}_g' for i in range(1,26)] + [f'point_{i:02d}_relative' for i in range(1,26)],
                     'trials': ['result', 'reason', 'feedback_steps', 'x', 'y', 'collision_object'],
                     'diagnostics': ['error'],
                     'grip_sync': ['acquisition_id', 'sync_id', 'host_t1_s', 'host_t4_s', 'device_t2_us', 'device_t3_us'],
@@ -92,6 +109,9 @@ class Recorder:
                                      'last_marker_request_id', 'last_marker_code', 'payload_json'] + flat_columns)
                     for row in rows:
                         payload = json.loads(row[-1])
+                        if name == 'grip_multichannel':
+                            payload.update({f'point_{i:02d}_g': value
+                                            for i, value in enumerate(payload['values_g'], 1)})
                         writer.writerow(list(row) + [payload.get(key) for key in flat_columns])
 
     def close(self, status='complete'):

@@ -19,7 +19,7 @@ class TaskTests(unittest.TestCase):
         t = Task(c, [], 10000)
         events = t.take_events()
         for _ in range(10000):
-            t.tick(.81)
+            t.tick(0)
             events.extend(t.take_events())
             if t.phase == 'complete': break
         self.assertEqual(t.trial, 10)
@@ -36,7 +36,7 @@ class TaskTests(unittest.TestCase):
         c = self.config(); c['durations']['pre_run'] = c['durations']['prepare'] = 0
         c.update(player_start=[20,10], gravity=0, lift_gain=0)
         t = Task(c, [], 21)
-        t.tick(.81); t.tick(.81)
+        t.tick(0); t.tick(0)
         self.assertEqual(t.result, 2)
         self.assertEqual(t.reason, 'collision')
 
@@ -44,7 +44,7 @@ class TaskTests(unittest.TestCase):
         c = self.config(); c['durations']['pre_run'] = c['durations']['prepare'] = 0
         c.update(lift_gain=150, gravity=15)  # Fixed reference, independent of participant settings.
         t = Task(c, [], 21)
-        t.tick(.81); t.tick(1.20)
+        t.tick(0); t.tick(1)
         self.assertAlmostEqual(t.x, 23.75)
         vy = (150-15)*.125*.98**7.5
         self.assertAlmostEqual(t.vy, vy)

@@ -46,6 +46,7 @@ class GripReader:
         self.rate_count = 0
         self.lock = threading.Lock()
         self.latest_sample = None
+        self.monitor_samples = deque(maxlen=max(4096, int(sample_rate*13)))
         self.capture_samples = None
         self.capture_overflow = False
         self.error = None
@@ -127,6 +128,9 @@ class GripReader:
     def store_sample(self, sample):
         sample['record_id'] = self.recorder.record('grip', sample, sample['t'])
         with self.lock:
+            self.monitor_samples.append((sample['t'] if sample['t'] is not None else self.recorder.now(),
+                                         abs(sample['raw']) if sample['valid'] else None,
+                                         sample['voltage'] if sample['valid'] else None))
             if sample['valid']:
                 self.latest_sample = sample
                 if self.capture_samples is not None:
@@ -138,6 +142,11 @@ class GripReader:
                 if len(self.queue) >= 4096:
                     raise RuntimeError('Grip task queue overflow')
                 self.queue.append(dict(sample))
+
+    def monitor_history(self):
+        # Independent, bounded observation; never drain task or calibration queues.
+        with self.lock:
+            return list(self.monitor_samples)
 
     def begin_task(self):
         with self.lock:
@@ -202,9 +211,11 @@ class GripReader:
             raise RuntimeError('No fresh grip sample; check Arduino/port')
         return dict(sample)
 
-    def wait_ready(self, timeout=5):
+    def wait_ready(self, timeout=5, check_abort=None):
         deadline = time.perf_counter() + timeout
         while time.perf_counter() < deadline:
+            if check_abort:
+                check_abort()
             if self.error:
                 raise RuntimeError('Grip acquisition failed') from self.error
             with self.lock:

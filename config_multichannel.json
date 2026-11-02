@@ -1,0 +1,103 @@
+{
+  "participant": "shenyuhan",
+  "session": "001",
+  "output": "data/weighted",
+  "calibration": {
+    "enabled": false,
+    "zero_s": 5.0,
+    "squeeze_s": 1.0,
+    "rest_s": 6.0,
+    "min_samples": 5,
+    "max_gap_s": 0.3,
+    "min_range": 1.0,
+    "lift_mode": "keep",
+    "target_fraction": 0.2,
+    "font": "auto"
+  },
+  "serial_devices": {
+    "grip": "0353637333235180C1F2",
+    "markers": "44238313838351A02222"
+  },
+  "display": {
+    "size": [
+      1200,
+      700
+    ],
+    "fullscreen": false,
+    "screen": 0,
+    "pressure_panel_fraction": 0.38,
+    "pressure_color_max_g": 5000
+  },
+  "grip": {
+    "port": "COM6",
+    "baud": 250000,
+    "require_timing": true,
+    "sample_rate": 256,
+    "max_missing": 10,
+    "max_lag_s": 0.25,
+    "gain": 1.0,
+    "stale_timeout_s": 1.0
+  },
+  "markers": {
+    "enabled": false,
+    "mode": "output_only",
+    "port": "COM10",
+    "baud": 115200,
+    "verbose": true,
+    "pulse_ms": 10,
+    "loopback_pin": null,
+    "codes": {
+      "run_start": 1,
+      "trial_start": 2,
+      "feedback_start": 3,
+      "success": 4,
+      "collision": 5,
+      "trial_end": 6,
+      "run_end": 7,
+      "abort": 255
+    }
+  },
+  "assets": {
+    "player": "assets/player.svg",
+    "background": "assets/background.svg"
+  },
+  "map": "maps/random.csv",
+  "task": {
+    "sample_block_size": 1,
+    "sampling_rate": 60,
+    "number_of_trials": 10,
+    "durations": {
+      "pre_run": 1.0,
+      "prepare": 1.0,
+      "feedback": 45.0,
+      "result": 1.0,
+      "iti": 1.0
+    },
+    "grip_min": 0.0,
+    "grip_max": 1.0,
+    "smoothing": 1.0,
+    "forward_speed": 30.0,
+    "lift_gain": 140.0,
+    "gravity": 25.0,
+    "damping": 0.98,
+    "player_start": [
+      20.0,
+      50.0
+    ],
+    "player_size": [
+      20.0,
+      20.0
+    ],
+    "world_height": 90.0
+  },
+  "verbose": true,
+  "multichannel": {
+    "hand": "left",
+    "display_hand": "right",
+    "port": null,
+    "serial_number": null,
+    "weights_file": "right_hand_weights.json",
+    "stale_timeout_s": 2.0,
+    "control_rate_hz": 60
+  }
+}

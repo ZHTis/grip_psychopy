@@ -51,16 +51,19 @@ class Task:
         events, self.events = self.events, []
         return events
 
-    def tick(self, raw, valid=True):
-        """One original source sample block, including same-block phase transitions."""
+    def tick(self, normalized, valid=True, *, raw=None):
+        """One control slot with normalized effort, including same-slot transitions.
+
+        raw is recorded for traceability only; device adapters own conversion.
+        Invalid slots advance the trial clock without changing flight physics.
+        """
         if self.phase == 'complete':
             return
         while True:
             progress = self.blocks >= self.durations[self.phase]
             if self.phase == 'feedback' and valid:
-                self.raw = abs(raw)
-                self.normalized = max(0, min(1, (self.raw - self.c['grip_min']) /
-                                            (self.c['grip_max'] - self.c['grip_min'])))
+                self.raw = normalized if raw is None else raw
+                self.normalized = max(0, min(1, normalized))
                 self.smoothed += (1-(1-self.c['smoothing'])**(self.dt/.125)) * (self.normalized - self.smoothed)
                 self.x += self.c['forward_speed'] * self.dt
                 self.vy += (self.c['lift_gain'] * self.smoothed - self.c['gravity']) * self.dt
@@ -126,15 +129,13 @@ def validate_config(c):
         raise ValueError('number_of_trials must be a positive integer')
     if not 0 <= t['smoothing'] <= 1 or not 0 <= t['damping'] <= 1:
         raise ValueError('smoothing/damping must be 0..1')
-    if not t['grip_max'] > t['grip_min']:
-        raise ValueError('grip_max must exceed grip_min')
     if t['gravity'] < 0 or t['lift_gain'] < 0:
         raise ValueError('gravity/lift_gain must be nonnegative')
     if len(t['player_size']) != 2 or min(t['player_size']) <= 0 or len(t['player_start']) != 2:
         raise ValueError('Invalid player size/start')
     if any(not math.isfinite(v) or v < 0 for v in t['durations'].values()):
         raise ValueError('Durations must be finite and nonnegative')
-    for key in ('grip_min', 'grip_max', 'gravity', 'lift_gain', 'smoothing', 'damping'):
+    for key in ('gravity', 'lift_gain', 'smoothing', 'damping'):
         if not math.isfinite(t[key]):
             raise ValueError(f'Non-finite {key}')
     required = {'run_start', 'trial_start', 'feedback_start', 'success', 'collision', 'trial_end', 'run_end', 'abort'}

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="450" height="570" viewBox="0 0 450 570">
+<!-- Palm outline and finger paths adapted from handy/index.html, manual page 6. -->
+<path fill="#203b40" stroke="#42706f" stroke-width="2" d="M80 302 Q105 265 139 270 L194 259 Q225 261 264 285 L267 355 Q277 404 248 450 Q219 479 203 486 L203 519 L161 519 L160 486 Q96 471 87 420 Z"/>
+<g fill="none" stroke-linecap="round" stroke-linejoin="round">
+<path stroke="#42706f" stroke-width="52" d="M244 430 L292 400 L354 354 L418 310"/><path stroke="#203b40" stroke-width="48" d="M244 430 L292 400 L354 354 L418 310"/>
+<path stroke="#42706f" stroke-width="52" d="M241 354 L248 292 L269 221 L292 150 L308 80"/><path stroke="#203b40" stroke-width="48" d="M241 354 L248 292 L269 221 L292 150 L308 80"/>
+<path stroke="#42706f" stroke-width="52" d="M194 276 L204 194 L215 108 L223 38"/><path stroke="#203b40" stroke-width="48" d="M194 276 L204 194 L215 108 L223 38"/>
+<path stroke="#42706f" stroke-width="52" d="M138 287 L138 198 L134 128 L134 68"/><path stroke="#203b40" stroke-width="48" d="M138 287 L138 198 L134 128 L134 68"/>
+<path stroke="#42706f" stroke-width="52" d="M95 310 L64 250 L45 196 L33 140"/><path stroke="#203b40" stroke-width="48" d="M95 310 L64 250 L45 196 L33 140"/>
+</g></svg>

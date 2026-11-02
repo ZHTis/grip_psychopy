@@ -5,17 +5,18 @@
   "calibration": {
     "enabled": true,
     "zero_s": 5.0,
-    "squeeze_s": 1.0,
-    "rest_s": 30.0,
+    "squeeze_s": 5.0,
+    "rest_s": 15.0,
     "min_samples": 5,
     "max_gap_s": 0.3,
+    "squeeze_data_timeout_s": 0.5,
     "min_range": 0.01,
     "lift_mode": "keep",
     "target_fraction": 0.2,
     "font": "auto"
   },
   "serial_devices": {
-    "grip": "0353637333235180C1F2",
+    "grip": "14536303330351215251",
     "markers": "44238313838351A02222"
   },
   "display": {"size": [1200, 500], "fullscreen": true, "screen": 1},

@@ -21,4 +21,4 @@ case "$task_python" in
         fi
         ;;
 esac
-exec "$task_python" "$@"
+exec "$task_python" -X faulthandler "$@"

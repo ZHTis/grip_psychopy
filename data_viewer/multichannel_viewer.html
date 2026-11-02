@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>25 通道握力 · 数据查看器</title>
+<style>
+:root{font:14px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#203a49;background:#f3f6f8;--accent:#087f82;--line:#dce5e9}*{box-sizing:border-box}body{margin:0}header{padding:25px 32px;background:white;border-bottom:1px solid var(--line)}h1{font-size:25px;margin:5px 0 9px;letter-spacing:-.6px}.eyebrow{color:var(--accent);font-size:11px;letter-spacing:2px}p{color:#637783;line-height:1.65;margin:6px 0}main{max-width:1600px;margin:auto;padding:20px 28px 35px}.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px}button,.fileButton{border:1px solid #cbd9df;background:white;color:#214453;border-radius:7px;padding:9px 13px;font:inherit;cursor:pointer;display:inline-block}button.primary,.fileButton.primary{background:var(--accent);color:white;border-color:var(--accent)}button:disabled{opacity:.5;cursor:default}input,select{font:inherit;border:1px solid #cbd9df;border-radius:6px;background:white;color:#234555;padding:7px;max-width:100%}input[type=number]{width:90px}input[type=range]{padding:0;accent-color:var(--accent);flex:1;min-width:120px}input[type=file]{position:absolute;width:1px;height:1px;opacity:0}select#session{max-width:470px;flex:1;min-width:200px}.panel{background:white;border:1px solid var(--line);border-radius:11px;padding:18px;min-width:0}.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}.summary .panel{padding:14px 18px}.k{font-size:12px;color:#617985}.v{font-size:23px;margin-top:8px;font-weight:600}.v small{font-size:12px;font-weight:400}.layout{display:grid;grid-template-columns:minmax(0,1fr) 325px;gap:16px}.plots{display:grid;gap:16px}.heading{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px}h2{font-size:16px;margin:0}.hint{color:#70838d;font-size:12px}.canvasWrap{position:relative;touch-action:none;cursor:crosshair}canvas{display:block;width:100%;height:260px}#heat{height:390px}.cursor{position:absolute;width:1px;top:18px;bottom:32px;background:#132f3d;pointer-events:none;display:none}.channels{display:flex;gap:5px;flex-wrap:wrap;margin-top:14px}.channels button{padding:5px 7px;font-size:12px;border-left:4px solid var(--ch)}.channels button[aria-pressed=false]{opacity:.4;background:#f4f6f7}.playback{display:flex;align-items:center;gap:10px;margin-bottom:16px}#timeLabel{font-variant-numeric:tabular-nums;min-width:97px;text-align:right}.range{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px}.range input{width:80px}.side svg{width:100%;height:auto;display:block;margin:8px 0}.sensor{cursor:pointer}.sensor:hover rect{stroke:#f59b42;stroke-width:2}.sensor text{pointer-events:none;font-family:Arial,sans-serif}.sensor .num{fill:#d3e8ec;font-size:9px}.sensor .value{fill:white;font-size:11px}.side table{width:100%;border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums}.side td,.side th{padding:6px 5px;text-align:right;border-bottom:1px solid #edf1f3}.side td:first-child,.side th:first-child{text-align:left}.side tbody tr{cursor:pointer}.side tbody tr:hover{background:#edf6f6}.tableScroll{max-height:280px;overflow:auto}.notice{padding:11px 14px;border-radius:7px;background:#e7f1f2;color:#37616b;line-height:1.6;margin-bottom:16px;overflow-wrap:anywhere}.notice.error{background:#fff0e9;color:#a34329}.empty{padding:70px 20px;text-align:center;color:#718692}.subtle{font-size:12px;color:#718692;line-height:1.6}footer{padding-top:20px;font-size:12px;color:#74858f}.hidden{display:none!important}@media(max-width:960px){.layout{grid-template-columns:1fr}.side{display:grid;grid-template-columns:1fr 1fr;gap:12px}.side .heading,.side>p{grid-column:1/-1}.summary{grid-template-columns:repeat(2,1fr)}}@media(max-width:600px){main{padding:14px}header{padding:20px}.side{display:block}.summary{gap:8px}.v{font-size:19px}.heading{flex-wrap:wrap}.hint{line-height:1.5}}
+</style></head><body>
+<header><div class="eyebrow">GRIPFLIGHT / RECORDING VIEWER</div><h1>25 通道握力数据</h1><p>查看完整记录，定位一次按压，回放手部各测点的压力变化。</p></header>
+<main>
+<div class="toolbar"><label class="fileButton primary">选择 CSV<input id="file" type="file" accept=".csv" multiple></label><label class="fileButton">选择数据文件夹<input id="folder" type="file" webkitdirectory multiple></label><select id="session" aria-label="选择记录" disabled><option>尚未选择记录</option></select><select id="sourceHand" aria-label="设备协议手别" disabled></select></div>
+<div id="notice" class="notice" role="status">选择会话文件夹或 grip_multichannel.csv。可选择包含多次记录的父文件夹，再切换记录。</div>
+<div id="empty" class="panel empty">所有数据在本机浏览器中处理。无需联网，不读取串口，不修改原始文件。</div>
+<section id="content" class="hidden">
+<div class="summary"><div class="panel"><div class="k">有效采集帧</div><div class="v" id="frames">—</div></div><div class="panel"><div class="k">记录跨度</div><div class="v" id="duration">—</div></div><div class="panel"><div class="k">平均接收速率</div><div class="v" id="rate">—</div></div><div class="panel"><div class="k">全记录最大单点读数</div><div class="v" id="peak">—</div></div></div>
+<div class="panel playback"><button id="play" class="primary">播放</button><select id="speed" aria-label="播放倍速"><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option><option value="5">5×</option></select><input id="time" type="range" aria-label="回放时刻" step="0.001"><span id="timeLabel">0.000 s</span></div>
+<div class="layout"><div class="plots">
+<div class="panel"><div class="heading"><h2>通道时间曲线</h2><span class="hint">点击曲线定位时刻 · 下方按钮切换通道</span></div><div class="range"><label>起点 <input id="start" type="number" step="0.1"></label><label>终点 <input id="end" type="number" step="0.1"></label><span class="hint">秒</span><button id="applyRange">查看片段</button><button id="resetRange">全程</button><button id="all">全选</button><button id="active">仅有响应</button></div><div class="canvasWrap" id="trendWrap"><canvas id="trend" aria-label="25 通道时间曲线"></canvas><div class="cursor" id="trendCursor"></div></div><div id="channels" class="channels"></div></div>
+<div class="panel"><div class="heading"><h2>25 通道压力热图</h2><label class="hint">颜色上限 <input id="colorMax" type="number" value="1000" min="1"> g</label></div><div class="canvasWrap" id="heatWrap"><canvas id="heat" aria-label="逐通道压力热图"></canvas><div class="cursor" id="heatCursor"></div></div><p class="subtle">横轴是记录开始后的电脑接收时间。热图按像素时间段取最大值以保留短时峰值；空白处没有样本。曲线不会跨越明显断流连线。</p></div>
+</div><aside class="panel side"><div class="heading"><h2>压力分布回放</h2><select id="displayHand" aria-label="显示手别"><option value="right">右手显示</option><option value="left">左手显示</option></select></div><p id="handInfo" class="subtle"></p>
+<svg id="hand" viewBox="0 0 450 570" role="img" aria-label="手掌 25 个测点"><g id="outline">
+<path fill="#203b40" stroke="#42706f" stroke-width="2" d="M80 302 Q105 265 139 270 L194 259 Q225 261 264 285 L267 355 Q277 404 248 450 Q219 479 203 486 L203 519 L161 519 L160 486 Q96 471 87 420 Z"/>
+<g fill="none" stroke-linecap="round" stroke-linejoin="round">
+<path stroke="#42706f" stroke-width="52" d="M244 430 L292 400 L354 354 L418 310"/><path stroke="#203b40" stroke-width="48" d="M244 430 L292 400 L354 354 L418 310"/>
+<path stroke="#42706f" stroke-width="52" d="M241 354 L248 292 L269 221 L292 150 L308 80"/><path stroke="#203b40" stroke-width="48" d="M241 354 L248 292 L269 221 L292 150 L308 80"/>
+<path stroke="#42706f" stroke-width="52" d="M194 276 L204 194 L215 108 L223 38"/><path stroke="#203b40" stroke-width="48" d="M194 276 L204 194 L215 108 L223 38"/>
+<path stroke="#42706f" stroke-width="52" d="M138 287 L138 198 L134 128 L134 68"/><path stroke="#203b40" stroke-width="48" d="M138 287 L138 198 L134 128 L134 68"/>
+<path stroke="#42706f" stroke-width="52" d="M95 310 L64 250 L45 196 L33 140"/><path stroke="#203b40" stroke-width="48" d="M95 310 L64 250 L45 196 L33 140"/>
+</g></g><g id="sensors"></g></svg>
+<div><p id="sampleInfo" class="subtle"></p><div class="tableScroll"><table><thead><tr><th>通道</th><th>当前 g</th><th>全程峰值 g</th></tr></thead><tbody id="values"></tbody></table></div><p class="subtle">点击测点或表格，单独查看该通道曲线。读数为设备上报值，未扣零、未加权，单位沿用设备的 g。</p></div>
+</aside></div></section>
+<footer>原始数据只读 · 协议手别与显示手别独立 · 接收速率不是厂家设备采样率 · CSV 通常在任务结束后导出</footer>
+</main>
+<script id="embedded-data" type="application/json">[]</script>
+<script>
+'use strict';
+const $=id=>document.getElementById(id);
+const positions=[[418,310],[308,80],[223,38],[134,68],[33,140],[354,354],[292,150],[215,108],[134,128],[45,196],[292,400],[269,221],[204,194],[138,198],[64,250],[244,430],[248,292],[194,276],[138,287],[95,310],[215,404],[241,354],[160,444],[114,434],[103,374]];
+const S={entries:[],frames:[],selected:new Set(Array.from({length:25},(_,i)=>i)),peaks:[],cursor:0,lo:0,hi:1,playing:false,token:0,gap:.3};
+const color=i=>`hsl(${(i*137.508)%360} 65% 40%)`;
+const pressure=v=>{const t=Math.max(0,Math.min(1,v/Math.max(1,Number($('colorMax').value)||1)));return `hsl(${210-t*55} ${25+t*35}% ${15+t*23}%)`;};
+function notice(text,error=false){$('notice').textContent=text;$('notice').classList.toggle('error',error);}
+function parseCSV(text){
+ text=text.replace(/^\uFEFF/,'');const rows=[];let row=[],cell='',quoted=false;
+ for(let i=0;i<text.length;i++){const c=text[i];if(quoted){if(c==='"'){if(text[i+1]==='"'){cell+='"';i++;}else quoted=false;}else cell+=c;}
+ else if(c==='"' && cell==='')quoted=true;
+ else if(c===','){row.push(cell);cell='';}
+ else if(c==='\n'||c==='\r'){if(c==='\r'&&text[i+1]==='\n')i++;row.push(cell);if(row.some(v=>v!==''))rows.push(row);row=[];cell='';}
+ else cell+=c;}
+ if(quoted)throw Error('CSV 中的引号未闭合，文件可能未写完。');
+ row.push(cell);if(row.some(v=>v!==''))rows.push(row);return rows;
+}
+function parseRecording(text){
+ const rows=parseCSV(text);if(!rows.length)throw Error('CSV 是空文件。');const headers=rows.shift(),ix=k=>headers.indexOf(k);
+ const time=ix('t_host_s'),hand=ix('hand'),valid=ix('valid'),sim=ix('simulated'),kind=ix('kind');
+ const points=Array.from({length:25},(_,i)=>ix(`point_${String(i+1).padStart(2,'0')}_g`));
+ if(time<0||hand<0||points.some(i=>i<0))throw Error('请选择 grip_multichannel.csv：需要 t_host_s、hand 和 25 个 point_XX_g 列。');
+ let rejected=0,invalid=0;const frames=[];
+ for(const row of rows){if(kind>=0&&row[kind]!=='grip_multichannel'){rejected++;continue;}
+ if(valid>=0&&['false','0'].includes((row[valid]||'').toLowerCase())){invalid++;continue;}
+ const t=Number(row[time]),v=points.map(i=>Number(row[i]));
+ if(!row[time]?.trim()||!Number.isFinite(t)||points.some(i=>!row[i]?.trim())||v.some(n=>!Number.isFinite(n)||n<0)||!['left','right'].includes(row[hand])){rejected++;continue;}
+ frames.push({t,v,hand:row[hand],sim:sim>=0?row[sim]:''});}
+ if(!frames.length)throw Error('没有可显示的有效 25 通道数据。');
+ frames.sort((a,b)=>a.t-b.t);return {frames,rejected,invalid};
+}
+function option(select,value,label){const o=document.createElement('option');o.value=value;o.textContent=label;select.append(o);}
+async function setEntries(entries){
+ if(!entries.length){notice('未找到 grip_multichannel.csv，请选择已结束实验的会话文件夹。',true);return;}
+ stop();S.entries=entries.sort((a,b)=>a.name.localeCompare(b.name));$('session').replaceChildren();
+ S.entries.forEach((e,i)=>option($('session'),i,e.name));$('session').disabled=false;$('session').value=String(entries.length-1);await loadEntry();
+}
+async function loadEntry(){
+ stop();const token=++S.token;const entry=S.entries[Number($('session').value)];notice('正在读取 '+entry.name+' …');
+ $('content').classList.add('hidden');$('empty').classList.remove('hidden');$('sourceHand').disabled=true;
+ try{const data=parseRecording(entry.file?await entry.file.text():entry.csv);let setup=entry.setup||{};
+ if(entry.setupFile){try{setup=JSON.parse(await entry.setupFile.text());}catch{setup={};}}
+ if(token!==S.token)return;S.data=data;S.entry=entry;
+ const assignment=setup.hand_assignment||{},rx=setup.effective_config?.multichannel||{};
+ $('displayHand').value=assignment.display_hand||rx.display_hand||'right';
+ if(!$('displayHand').value)$('displayHand').value='right';
+ const hands=[...new Set(data.frames.map(f=>f.hand))];$('sourceHand').replaceChildren();
+ for(const hand of hands)option($('sourceHand'),hand,`设备协议：${hand==='left'?'左':'右'}手 (${hand})`);
+ const preferred=assignment.source_hand||rx.hand;if(hands.includes(preferred))$('sourceHand').value=preferred;
+ $('sourceHand').disabled=false;$('empty').classList.add('hidden');$('content').classList.remove('hidden');selectHand();
+ }catch(e){if(token===S.token)notice(e.message,true);}
+}
+function selectHand(){
+ stop();S.frames=S.data.frames.filter(f=>f.hand===$('sourceHand').value);S.peaks=Array(25).fill(0);
+ for(const f of S.frames)for(let c=0;c<25;c++)S.peaks[c]=Math.max(S.peaks[c],f.v[c]);
+ const gaps=S.frames.slice(1).map((f,i)=>f.t-S.frames[i].t).filter(d=>d>0).sort((a,b)=>a-b);
+ S.gap=Math.max(.3,(gaps[Math.floor(gaps.length/2)]||0)*5);const duration=S.frames.at(-1).t-S.frames[0].t;
+ $('frames').textContent=S.frames.length.toLocaleString();$('duration').textContent=duration.toFixed(2)+' s';
+ $('rate').textContent=duration>0?((S.frames.length-1)/duration).toFixed(1)+' 帧/s':'—';
+ $('peak').textContent=Math.max(...S.peaks).toLocaleString()+' g';
+ $('colorMax').value=Math.max(1,Math.ceil(Math.max(...S.peaks)/100)*100);
+ const simulated=new Set(S.frames.map(f=>f.sim.toLowerCase()));const simText=simulated.has('true')||simulated.has('1')?' · 包含模拟记录':simulated.has('false')||simulated.has('0')?' · 硬件记录':' · 模拟标识未知';
+ notice(S.entry.name+simText+` · 跳过 ${S.data.rejected} 行格式异常、${S.data.invalid} 行无效样本`);
+ S.selected=new Set(Array.from({length:25},(_,i)=>i));updateButtons();resetRange();
+}
+function stop(){S.playing=false;$('play').textContent='播放';}
+function resetRange(){if(!S.frames.length)return;S.lo=S.frames[0].t;S.hi=Math.max(S.lo+.001,S.frames.at(-1).t);$('start').value=String(S.lo);$('end').value=String(S.hi);setRange();}
+function setRange(){const lo=Number($('start').value),hi=Number($('end').value);
+ if(!Number.isFinite(lo)||!Number.isFinite(hi)||hi<=lo){notice('时间终点须大于起点。',true);return;}
+ if(hi<S.frames[0].t||lo>S.frames.at(-1).t){notice('所选时间片段不在记录范围内。',true);return;}
+ stop();S.lo=Math.max(lo,S.frames[0].t);S.hi=Math.min(hi,Math.max(S.frames.at(-1).t,S.lo+.001));
+ $('time').min=S.lo;$('time').max=S.hi;drawPlots();setCursor(S.lo);
+}
+function lowerBound(t){let lo=0,hi=S.frames.length;while(lo<hi){const m=(lo+hi)>>1;if(S.frames[m].t<t)lo=m+1;else hi=m;}return lo;}
+function canvas(id){const e=$(id),w=e.clientWidth,h=e.clientHeight,dpr=window.devicePixelRatio||1;e.width=Math.round(w*dpr);e.height=Math.round(h*dpr);const g=e.getContext('2d');g.scale(dpr,dpr);g.clearRect(0,0,w,h);g.font='11px -apple-system,sans-serif';return {g,w,h,L:48,R:12,T:18,B:32};}
+function axes(p,upper,heat=false){const {g,w,h,L,R,T,B}=p;g.strokeStyle='#e3eaee';g.fillStyle='#758994';
+ for(let i=0;i<=5;i++){const x=L+(w-L-R)*i/5;g.beginPath();g.moveTo(x,T);g.lineTo(x,h-B);g.stroke();g.textAlign='center';g.fillText((S.lo+(S.hi-S.lo)*i/5).toFixed(1),x,h-12);}
+ g.textAlign='left';g.fillText('时间 (s)',w-55,h-1);
+ if(!heat)for(let i=0;i<=4;i++){const y=h-B-(h-T-B)*i/4;g.beginPath();g.moveTo(L,y);g.lineTo(w-R,y);g.stroke();g.textAlign='right';g.fillText((upper*i/4).toFixed(0),L-7,y+4);}
+ g.textAlign='left';g.fillText(heat?'通道':'读数 (g)',4,10);
+}
+function drawPlots(){if(!S.frames.length)return;
+ const first=lowerBound(S.lo),last=lowerBound(S.hi+1e-9);S.range=[first,last];const p=canvas('trend'),q=canvas('heat');
+ let upper=1;for(let i=first;i<last;i++)for(const c of S.selected)upper=Math.max(upper,S.frames[i].v[c]);upper*=1.06;axes(p,upper);axes(q,1,true);
+ const width=Math.max(1,Math.floor(p.w-p.L-p.R)),height=p.h-p.T-p.B;
+ // Each pixel retains min/max rather than discarding short pressure peaks.
+ for(const c of S.selected){const {g}=p;g.strokeStyle=color(c);g.lineWidth=1.25;g.beginPath();let previous=null,bucket=null;
+ const flush=()=>{if(!bucket)return;const x=p.L+bucket.x+.5,y1=p.h-p.B-bucket.max/upper*height,y2=p.h-p.B-bucket.min/upper*height;
+ if(bucket.break||previous===null)g.moveTo(x,y1);else g.lineTo(x,y1);g.lineTo(x,y2);previous=bucket.last;};
+ for(let i=first;i<last;i++){const f=S.frames[i],x=Math.min(width-1,Math.floor((f.t-S.lo)/(S.hi-S.lo)*width));
+ if(!bucket||x!==bucket.x||f.t-bucket.last>S.gap){flush();bucket={x,min:f.v[c],max:f.v[c],last:f.t,break:previous===null||f.t-previous>S.gap};}
+ else{bucket.min=Math.min(bucket.min,f.v[c]);bucket.max=Math.max(bucket.max,f.v[c]);bucket.last=f.t;}}
+ flush();g.stroke();
+ if(last-first===1){const f=S.frames[first];g.fillStyle=color(c);g.beginPath();g.arc(p.L+(f.t-S.lo)/(S.hi-S.lo)*width,p.h-p.B-f.v[c]/upper*height,2.5,0,Math.PI*2);g.fill();}}
+ const qw=Math.max(1,Math.floor(q.w-q.L-q.R)),rh=(q.h-q.T-q.B)/25,bins=new Map();
+ for(let i=first;i<last;i++){const f=S.frames[i],x=Math.min(qw-1,Math.floor((f.t-S.lo)/(S.hi-S.lo)*qw));let values=bins.get(x);if(!values){values=f.v.slice();bins.set(x,values);}else for(let c=0;c<25;c++)values[c]=Math.max(values[c],f.v[c]);}
+ for(let c=0;c<25;c++){q.g.fillStyle='#70848e';q.g.textAlign='right';q.g.fillText(String(c+1).padStart(2,'0'),q.L-8,q.T+rh*(c+.7));}
+ for(const [x,values] of bins)for(let c=0;c<25;c++){q.g.fillStyle=pressure(values[c]);q.g.fillRect(q.L+x,q.T+rh*c,1.2,rh-.5);}
+ updateCursorLines();
+}
+function updateCursorLines(){for(const [wrap,line] of [['trendWrap','trendCursor'],['heatWrap','heatCursor']]){const w=$(wrap).clientWidth;$(line).style.left=(48+(S.cursor-S.lo)/(S.hi-S.lo)*(w-60))+'px';$(line).style.display='block';}}
+function setCursor(t){if(!S.frames.length)return;S.cursor=Math.max(S.lo,Math.min(S.hi,t));$('time').value=S.cursor;$('timeLabel').textContent=S.cursor.toFixed(3)+' s';
+ let i=lowerBound(S.cursor);if(i>=S.frames.length||S.frames[i].t>S.cursor)i--;i=Math.max(0,i);S.index=i;const frame=S.frames[i],age=S.cursor-frame.t;
+ $('sampleInfo').textContent=`原始帧 ${i+1} / ${S.frames.length} · 接收 ${frame.t.toFixed(3)} s`+(age>S.gap?` · 此处无新样本，显示 ${age.toFixed(2)} 秒前的值`:'');
+ const right=$('displayHand').value==='right';$('outline').setAttribute('transform',right?'translate(450 0) scale(-1 1)':'');
+ $('handInfo').textContent=`设备协议 ${$('sourceHand').value} · ${right?'右':'左'}手显示 · 掌面朝向你`;
+ for(let c=0;c<25;c++){const [x,y]=positions[c],node=$('sensors').children[c];node.setAttribute('transform',`translate(${right?450-x:x} ${y})`);node.querySelector('rect').setAttribute('fill',pressure(frame.v[c]));node.querySelector('.value').textContent=frame.v[c];node.setAttribute('aria-label',`通道 ${c+1}：${frame.v[c]} g`);const row=$('values').children[c];row.children[1].textContent=frame.v[c];row.children[2].textContent=S.peaks[c];}updateCursorLines();
+}
+function updateButtons(){[...$('channels').children].forEach((b,i)=>b.setAttribute('aria-pressed',S.selected.has(i)));}
+function solo(c){S.selected=new Set([c]);updateButtons();drawPlots();}
+for(let c=0;c<25;c++){const b=document.createElement('button');b.textContent=String(c+1).padStart(2,'0');b.style.setProperty('--ch',color(c));b.setAttribute('aria-pressed','true');b.onclick=()=>{if(S.selected.has(c))S.selected.delete(c);else S.selected.add(c);updateButtons();drawPlots();};$('channels').append(b);
+ const ns='http://www.w3.org/2000/svg',group=document.createElementNS(ns,'g');group.classList.add('sensor');group.setAttribute('role','button');group.setAttribute('tabindex','0');group.innerHTML='<rect x="-19" y="-13" width="38" height="26" rx="3" stroke="#7297a0"/><text class="num" text-anchor="middle" y="-2">'+String(c+1).padStart(2,'0')+'</text><text class="value" text-anchor="middle" y="10">—</text>';group.onclick=()=>solo(c);group.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();solo(c);}};$('sensors').append(group);
+ const row=document.createElement('tr');for(const text of [String(c+1).padStart(2,'0'),'—','—']){const cell=document.createElement('td');cell.textContent=text;row.append(cell);}row.onclick=()=>solo(c);$('values').append(row);}
+$('file').onchange=e=>setEntries([...e.target.files].map(file=>({name:file.name,file})));
+$('folder').onchange=e=>{const files=[...e.target.files],byPath=new Map(files.map(f=>[f.webkitRelativePath,f]));setEntries(files.filter(f=>f.name==='grip_multichannel.csv').map(file=>{const parent=file.webkitRelativePath.slice(0,-file.name.length);return {name:parent.replace(/\/$/,''),file,setupFile:byPath.get(parent+'experiment_setup.json')};}));};
+$('session').onchange=loadEntry;$('sourceHand').onchange=selectHand;$('displayHand').onchange=()=>setCursor(S.cursor);
+$('time').oninput=()=>{stop();setCursor(Number($('time').value));};$('colorMax').onchange=()=>{if(Number($('colorMax').value)<=0)$('colorMax').value=1;drawPlots();setCursor(S.cursor);};
+$('applyRange').onclick=setRange;$('resetRange').onclick=resetRange;$('all').onclick=()=>{S.selected=new Set(Array.from({length:25},(_,i)=>i));updateButtons();drawPlots();};$('active').onclick=()=>{S.selected=new Set(S.peaks.map((p,i)=>p>0?i:-1).filter(i=>i>=0));updateButtons();drawPlots();};
+for(const id of ['trendWrap','heatWrap'])$(id).onclick=e=>{if(!S.frames.length)return;stop();const r=$(id).getBoundingClientRect();setCursor(S.lo+(e.clientX-r.left-48)/(r.width-60)*(S.hi-S.lo));};
+$('play').onclick=()=>{if(S.playing){stop();return;}if(S.cursor>=S.hi)setCursor(S.lo);S.playing=true;S.last=performance.now();$('play').textContent='暂停';};
+setInterval(()=>{if(S.playing){const now=performance.now(),t=S.cursor+(now-S.last)/1000*Number($('speed').value);S.last=now;setCursor(t);if(t>=S.hi)stop();}},60);
+let resize;window.addEventListener('resize',()=>{clearTimeout(resize);resize=setTimeout(drawPlots,120);});
+try{const embedded=JSON.parse($('embedded-data').textContent);if(embedded.length)setEntries(embedded);}catch(e){notice(e.message,true);}
+</script></body></html>

@@ -45,7 +45,7 @@ class TimedGripTests(unittest.TestCase):
     def test_invalid_slot_advances_trial_without_physics(self):
         c=test_task.TaskTests().config();c['sample_block_size']=1
         c['durations']['pre_run']=c['durations']['prepare']=0
-        t=Task(c,[],10000);t.tick(.81)
+        t=Task(c,[],10000);t.tick(0)
         before=(t.x,t.y,t.vy,t.feedback_steps)
         t.tick(None,valid=False)
         self.assertEqual((t.x,t.y,t.vy,t.feedback_steps),before)

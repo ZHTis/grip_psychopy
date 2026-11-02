@@ -1,0 +1,33 @@
+Generated with the built-in image_gen tool.
+Style and board reference: Arduino UNO R3 Full Pinout, page 1.
+https://docs.arduino.cc/resources/pinouts/A000066-full-pinout.pdf
+Reference license: CC BY-SA 4.0. Adapted project diagram under CC BY-SA 4.0; not an official Arduino diagram.
+
+Initial redesign prompt:
+Use case: style-transfer + scientific-educational diagram.
+Edit target image 1: the current pneumatic grip overview. Rebuild its visual design completely.
+Supporting style and board reference image 2: Arduino official UNO R3 full pinout page 1, by Arduino, CC BY-SA 4.0. Follow its sober precise flat-vector engineering drawing style and authentic vertical UNO R3 board silhouette/components. The new drawing is a project diagram, not an official Arduino drawing.
+
+User wants concise professional hardware-documentation graphics with lively restrained colors, not cute or childish.
+Use a pure white background, sharp fine vector-style strokes, Chinese sans-serif typography, aligned column grid, teal PCB, orange analog signal, blue USB, charcoal ground, red power, very limited light gray panels. Landscape wide composition. ZERO faces, smileys, hearts, handwriting, speech bubbles, doodles, shadows, gradients or motivational slogans. No hand, just a clean technical outline of a squeezable pneumatic bulb.
+
+Title exact ‘握力采集系统｜UNO R3’.
+Four clear left-to-right stages:
+01 ‘气囊握把’ as an outline of a squeezable balloon/bladder with one hose;
+02 ‘模拟气压传感器’ as a clean rectangular generic module (not pretend specific hardware);
+03 ‘UNO R3’ as a top view referencing image 2, USB connector AT TOP, A0 at first pin of lower-left 6-pin analog header, GND on upper-left POWER header. Keep other pins gray/unlabeled to avoid complexity;
+04 ‘电脑任务’ as a minimal laptop outline, one blue signal trace.
+Connect bladder to sensor via a single tidy blue-gray tube labeled ‘气管’. Connect sensor OUT to the actual board A0 location with an orange orthogonal line labeled ‘OUT → A0’. Connect sensor GND to UNO GND with a charcoal separate orthogonal line labeled ‘GND’. Add a small plain supply block below sensor labeled ‘额定电源’, its + terminal red line to sensor VCC, its - terminal charcoal line joining common ground with a dot. No arbitrary supply value, do not unconditionally connect VCC to board 5V. All wiring uncluttered, no unintended crossings. USB cable from UNO TOP connector routed ABOVE the board to laptop, blue and labeled ‘USB 串口’.
+Directly underneath board small clean caption ‘A0 → 10-bit ADC → 串口’.
+Bottom narrow specification row: ‘模拟输入 A0’ | ‘目标采样率 256 Hz’ | ‘串口 250000 baud’.
+Small footer ‘传感器供电与输出范围按具体型号确认；引脚位置以官方 Pinout 为准。’
+Small provenance ‘UNO R3 板图参考：Arduino · CC BY-SA 4.0’.
+Preserve the system's electrical meaning and Chinese legibility. Remove all old illustrative ornament and old headline. Spacious readable professional technical figure with vibrant functional color coding.
+
+Correction prompt:
+Correct ONLY electrical wiring and redundant pin labels in the last generated professional UNO R3 grip-system diagram. Preserve its entire professional layout, header, typography, colors, bulb/sensor/UNO/laptop illustrations and footer.
+Three mandatory corrections:
+1. External supply currently has wrong polarity labels. Its LEFT terminal is connected to RED VCC wire: left terminal MUST be red and labeled '+' in red beneath it. Its RIGHT terminal is connected to BLACK GND wire: right terminal MUST be black and labeled '−' in black beneath it. Swap current erroneous minus/plus. Keep red wire from left + to sensor VCC, black wire from right − to ground junction.
+2. Sensor GND wire MUST connect to UNO GND pin, not to A0. From the existing black junction near sensor GND, route the black wire horizontally at GND height to UNO GND (the existing GND callout at board left, y approximately 467 in original 1774x887). It must meet the GND pad directly; DO NOT drop it down beside orange wire. Remove the entire erroneous downward black segment and its lower horizontal segment near A0. Only orange OUT wire reaches A0. The right power terminal's black wire still joins the sensor GND junction. Orange OUT line retains its distinct route to A0.
+3. Remove all gray external board-pin labels NC, IOREF, RESET, 3V3, 5V, second gray GND, VIN, A1, A3, A4, A5 and their label pills. Keep ONLY the prominent black GND callout at its correct power-header pin and orange A0 callout at first lower-left analog-header pin. Leave the actual board pads/components alone.
+These precise electrical corrections are essential: VCC to supply +; supply − and sensor GND and UNO GND all common; OUT to A0 only. Do not introduce any junction between analog signal and ground.

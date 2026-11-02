@@ -1,9 +1,19 @@
-> 更新（2026-09-08）：主任务现采用持续运行策略，仅完成全部 trial 或按 Esc 主动结束。握力无数据/过期时保持最后有效值，无历史值则用 grip_min；数据恢复后自动使用新值。打标端口或回执失败后，本次运行停用硬件打标但继续保存本地事件，不会补发旧事件或自动重新连接。延迟超过阈值时重新安排后续时间步并继续；运行中保存错误仅警告，可能造成记录缺失。metadata 记录 runtime_warnings / dropped_records，task 的 payload_json 标记 grip_input_status / grip_age_s。正常完成不代表硬件采集和打标成功。配置损坏、缺少依赖、画面无法创建等启动失败仍需修复。独立 test_module.py 测试仍严格报告硬件错误。下文早期的“超时中止”说明以本更新为准。
+> 更新（2026-09-08）：原 UNO 任务采用持续运行策略，仅完成全部 trial 或按 Esc 主动结束。握力无数据/过期时保持最后有效值，无历史值则用 grip_min；数据恢复后自动使用新值。打标端口或回执失败后，本次运行停用硬件打标但继续保存本地事件，不会补发旧事件或自动重新连接。延迟超过阈值时重新安排后续时间步并继续；运行中保存错误仅警告，可能造成记录缺失。metadata 记录 runtime_warnings / dropped_records，task 的 payload_json 标记 grip_input_status / grip_age_s。正常完成不代表硬件采集和打标成功。配置损坏、缺少依赖、画面无法创建等启动失败仍需修复。独立 test_module.py 测试仍严格报告硬件错误。下文早期的“超时中止”说明以本更新为准。
 # GripFlight → PsychoPy
+
+硬件装配、UNO R3 固件与电脑端读取示例见 [握力计使用说明](docs/握力计A_医院用.md)（当前 A0 / 250000 baud / 256 Hz 四列协议）。
 
 复用 BCI2000 GripFlight 的原始背景、小鸟 SVG 和两份 CSV 地图；握力读取、打标、数据保存各自独立。任务电脑运行 PsychoPy，脑电继续由脑电电脑自己的软件记录。
 
 ## 快速开始
+
+两款握力计现在共用同一实验运行器与游戏核心，分别由设备模块处理采集、校准和升力换算。模块职责和扩展接口见 [两款握力计的模块结构](docs/后续结构整理.md)。
+
+25 通道记录可用离线[数据查看器](data_viewer/multichannel_viewer.html)打开，Mac 运行 `bash launch_data_viewer.command` 后选择 CSV 或会话文件夹，支持通道曲线、压力热图和手形回放。说明见 [data_viewer/README.md](data_viewer/README.md)。
+
+右手 25 通道现可直接控制游戏，并通过浏览器实时调整各点权重：见 [右手加权调参与游戏](docs/右手加权调参与游戏.md)。Mac 无设备体验：`bash launch_multichannel.command --simulate`。新模式使用独立配置，默认窗口显示、关闭硬件打标；原 UNO 启动方式保留。
+
+RX-G0505M 新设备可使用独立的 [25 通道采集模块](docs/25通道采集模块.md)：接收左右手全部通道、记录原始字节和 CSV；该独立采集入口不运行游戏。Mac 先运行 `bash run_python.sh record_multichannel_grip.py --list-ports` 查看端口。
 
 Mac 使用 `bash launch_simulation.command` 模拟运行。串口可通过 `--grip-port` / `--marker-port` 为本次运行指定，使用 `--list-ports` 查询本机端口；Mac 与 Windows 完整命令见 [PORTABILITY.md](PORTABILITY.md#mac-启动与跨平台串口)。
 

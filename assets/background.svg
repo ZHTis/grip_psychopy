@@ -1,6 +1,6 @@
 <svg width="680" height="520" viewBox="0 0 680 520" role="img" xmlns="http://www.w3.org/2000/svg">
-<title>背景：树枝与叶子</title>
-<desc>蓝色天空背景，棕色树枝，绿色叶子，装饰光点</desc>
+<title>背景：叶子与光点</title>
+<desc>蓝色天空背景，绿色叶子，装饰光点</desc>
 
 <rect width="680" height="520" fill="#F0F8FF"/>
 
@@ -13,7 +13,7 @@
   <ellipse cx="145" cy="455" rx="12" ry="6" fill="#5A9E5A" transform="rotate(15,145,455)"/>
 </g>
 
-<rect x="60" y="380" width="480" height="22" rx="8" fill="#8B6347"/>
+
 
 <g>
   <ellipse cx="560" cy="370" rx="22" ry="9" fill="#5A9E5A" transform="rotate(-10,560,370)"/>

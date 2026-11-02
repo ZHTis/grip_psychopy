@@ -1,10 +1,12 @@
 """Task-only continuation policy. Independent bench tests remain strict."""
 import time
 from .recording import Recorder
+from .event_log import EventHistory, WATCHED
 
 
 class ContinuingRecorder:
     def __init__(self, root, parameters):
+        self.event_history = EventHistory()
         self.origin = time.perf_counter()
         self.backend = None
         self.directory = root
@@ -26,13 +28,23 @@ class ContinuingRecorder:
         self.warnings[category] = message
 
     def record(self, kind, payload, t=None):
+        watched = kind in WATCHED
+        if watched and t is None:
+            t = self.now()
+        record_id = None
         try:
             if self.backend:
-                return self.backend.record(kind, payload, t)
+                record_id = self.backend.record(kind, payload, t)
         except Exception as exc:
             self.warn('storage', exc)
-        self.dropped_records += 1
-        return None
+        if watched:
+            self.event_history.append(kind, payload, t, record_id)
+        if record_id is None:
+            self.dropped_records += 1
+        return record_id
+
+    def recent_events(self):
+        return self.event_history.snapshot()
 
     def set_context(self, **context):
         if self.backend:
